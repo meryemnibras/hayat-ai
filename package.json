@@ -1,0 +1,44 @@
+{
+  "name": "hayat-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.36.2",
+    "@langchain/core": "^1.1.5",
+    "@langchain/openai": "^1.2.0",
+    "@prisma/client": "^6.19.1",
+    "@sentry/nextjs": "^10.30.0",
+    "@supabase/supabase-js": "^2.87.1",
+    "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-table": "^8.21.3",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.8",
+    "langchain": "^1.2.0",
+    "lucide-react": "^0.561.0",
+    "next": "16.0.10",
+    "openai": "^6.10.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
+    "recharts": "^3.6.0",
+    "stripe": "^20.0.0",
+    "twilio": "^5.10.7",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "prisma": "^6.19.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

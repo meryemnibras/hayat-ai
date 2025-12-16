@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  DOCTOR
+  STAFF
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentSource {
+  WEB
+  CHAT
+  PHONE
+  INTERNAL
+}
+
+enum ConversationChannel {
+  CHAT
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum MessageSender {
+  PATIENT
+  STAFF
+  AI
+}
+
+model Clinic {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  phone          String?
+  email          String?
+  timezone       String?         @default("UTC")
+  addressLine1   String?
+  city           String?
+  country        String?
+  users          User[]
+  patients       Patient[]
+  appointments   Appointment[]
+  conversations  Conversation[]
+  subscription   Subscription?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([name])
+  @@index([slug])
+}
+
+model User {
+  id          String    @id @default(cuid())
+  clinicId    String
+  clinic      Clinic    @relation(fields: [clinicId], references: [id])
+  fullName    String
+  email       String    @unique
+  phone       String?
+  clerkId     String?   @unique
+  role        UserRole
+  title       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  notes       String?
+  appointments Appointment[] @relation("ProviderAppointments")
+
+  @@index([clinicId, role])
+}
+
+model Patient {
+  id            String          @id @default(cuid())
+  clinicId      String
+  clinic        Clinic          @relation(fields: [clinicId], references: [id])
+  fullName      String
+  email         String?
+  phone         String?
+  dateOfBirth   DateTime?
+  gender        Gender?         @default(UNSPECIFIED)
+  notes         String?
+  tags          String[]        @default([])
+  appointments  Appointment[]
+  conversations Conversation[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([clinicId, fullName])
+  @@index([clinicId, phone])
+}
+
+model Appointment {
+  id           String             @id @default(cuid())
+  clinicId     String
+  clinic       Clinic             @relation(fields: [clinicId], references: [id])
+  patientId    String
+  patient      Patient            @relation(fields: [patientId], references: [id])
+  providerId   String?
+  provider     User?              @relation("ProviderAppointments", fields: [providerId], references: [id])
+  status       AppointmentStatus  @default(SCHEDULED)
+  source       AppointmentSource  @default(WEB)
+  title        String?
+  startTime    DateTime
+  endTime      DateTime?
+  location     String?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([clinicId, startTime])
+  @@index([patientId, startTime])
+  @@index([status])
+}
+
+model Conversation {
+  id             String               @id @default(cuid())
+  clinicId       String
+  clinic         Clinic               @relation(fields: [clinicId], references: [id])
+  patientId      String
+  patient        Patient              @relation(fields: [patientId], references: [id])
+  channel        ConversationChannel  @default(CHAT)
+  status         ConversationStatus   @default(OPEN)
+  subject        String?
+  startedAt      DateTime             @default(now())
+  lastMessageAt  DateTime?
+  messages       Message[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([clinicId, status])
+  @@index([patientId, status])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id              String         @id @default(cuid())
+  conversationId  String
+  conversation    Conversation   @relation(fields: [conversationId], references: [id])
+  senderType      MessageSender
+  senderId        String?
+  content         String
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BILLING & SUBSCRIPTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum PlanTier {
+  ESSENTIAL
+  PROFESSIONAL
+  PREMIUM
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  clinicId             String             @unique
+  clinic               Clinic             @relation(fields: [clinicId], references: [id])
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  tier                 PlanTier           @default(ESSENTIAL)
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  usageRecords         UsageRecord[]
+
+  @@index([stripeCustomerId])
+  @@index([status])
+}
+
+model UsageRecord {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  periodStart    DateTime
+  periodEnd      DateTime
+  interactions   Int          @default(0)
+  overage        Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([subscriptionId, periodStart])
+  @@index([subscriptionId, periodStart])
+}
