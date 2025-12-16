@@ -1,0 +1,28 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Stylized M -->
+  <path d="M8 42V18L18 32L28 18V42" stroke="url(#mGradient)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Checkmark inside M -->
+  <path d="M11 28L15 33L24 22" stroke="url(#mGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- "ediai" text -->
+  <text x="38" y="38" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="600" fill="#0F766E">ediai</text>
+  
+  <!-- Decorative dot 1 -->
+  <circle cx="145" cy="18" r="5" fill="#22D3EE"/>
+  
+  <!-- Decorative dot 2 -->
+  <circle cx="158" cy="30" r="4" fill="#10B981"/>
+  
+  <!-- Tagline -->
+  <text x="38" y="52" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="500" fill="#0891B2">AI Medical Concierge</text>
+</svg>
+

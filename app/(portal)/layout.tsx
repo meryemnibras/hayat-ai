@@ -260,7 +260,7 @@ export default function PortalLayout({
               {/* Logo */}
               <a href="/" className="flex items-center space-x-3">
                 <Image
-                  src="/images/logo.png"
+                  src="/images/logo.svg"
                   alt="Mediai Logo"
                   width={140}
                   height={40}

@@ -30,7 +30,7 @@ export default function Logo({
       {/* Try to load PNG first, fallback to SVG */}
       <div className="relative">
         <Image
-          src="/images/logo.png"
+          src="/images/logo.svg"
           alt="Mediai Logo"
           width={size === "xl" ? 200 : size === "lg" ? 150 : size === "md" ? 120 : 100}
           height={size === "xl" ? 60 : size === "lg" ? 45 : size === "md" ? 36 : 30}

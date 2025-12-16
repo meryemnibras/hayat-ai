@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   MessageCircle,
   Mic,
   Calendar,
-  User,
   FileText,
   Bell,
   Send,
@@ -509,12 +509,28 @@ export default function PatientPortalPage() {
         ${isMobile && !isSidebarOpen ? (isRTL ? "translate-x-full" : "-translate-x-full") : "translate-x-0"}
       `}
       >
+        {/* Logo Section */}
+        {isSidebarOpen && (
+          <div className="p-4 border-b dark:border-gray-700">
+            <a href="/" className="flex items-center justify-center">
+              <Image
+                src="/images/logo.svg"
+                alt="Mediai Logo"
+                width={120}
+                height={36}
+                className="h-9 w-auto object-contain"
+                priority
+              />
+            </a>
+          </div>
+        )}
+        
         {/* User Profile Card */}
         {isSidebarOpen && (
           <div className="p-4 border-b dark:border-gray-700">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-400 rounded-xl flex items-center justify-center text-white font-bold">
                   JD
                 </div>
                 <StatusBadge status="online" size="sm" />
@@ -524,7 +540,7 @@ export default function PatientPortalPage() {
                   John Doe
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Patient ID: #HAY2024
+                  Patient ID: #MED2024
                 </p>
               </div>
             </div>

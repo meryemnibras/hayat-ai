@@ -32,7 +32,7 @@ export function Sidebar() {
       {/* Logo */}
       <Link href="/" className="flex h-16 items-center gap-3 border-b border-white/5 px-6 hover:bg-white/5 transition-colors">
         <Image
-          src="/images/logo.png"
+          src="/images/logo.svg"
           alt="Mediai Logo"
           width={120}
           height={36}

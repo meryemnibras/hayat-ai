@@ -145,7 +145,7 @@ export default function PricingPage() {
           <Link href="/" className="flex items-center gap-3">
             <ArrowLeft className="h-5 w-5 text-slate-400" />
             <Image
-              src="/images/logo.png"
+              src="/images/logo.svg"
               alt="Mediai Logo"
               width={130}
               height={40}
