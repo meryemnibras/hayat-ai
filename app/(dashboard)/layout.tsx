@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, createContext, useContext } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { QueryProvider } from "@/components/providers/query-provider";
+import MediaiLogo, { MediaiIcon } from "@/components/shared/MediaiLogo";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -17,11 +17,8 @@ import {
   Search,
   Menu,
   X,
-  ChevronDown,
   Moon,
   Sun,
-  Globe,
-  Check,
 } from "lucide-react";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -91,18 +88,9 @@ export default function DashboardLayout({
               <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4">
                 <Link href="/" className="flex items-center gap-3">
                   {sidebarOpen ? (
-                    <Image
-                      src="/images/logo.svg"
-                      alt="Mediai Logo"
-                      width={120}
-                      height={36}
-                      className="h-9 w-auto object-contain"
-                      priority
-                    />
+                    <MediaiLogo size="sm" darkMode={isDarkMode} />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">M</span>
-                    </div>
+                    <MediaiIcon size={40} />
                   )}
                 </Link>
                 <button

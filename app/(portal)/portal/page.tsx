@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import MediaiLogo from "@/components/shared/MediaiLogo";
 import {
   MessageCircle,
   Mic,
@@ -513,14 +513,7 @@ export default function PatientPortalPage() {
         {isSidebarOpen && (
           <div className="p-4 border-b dark:border-gray-700">
             <a href="/" className="flex items-center justify-center">
-              <Image
-                src="/images/logo.svg"
-                alt="Mediai Logo"
-                width={120}
-                height={36}
-                className="h-9 w-auto object-contain"
-                priority
-              />
+              <MediaiLogo size="sm" darkMode={isDarkMode} />
             </a>
           </div>
         )}

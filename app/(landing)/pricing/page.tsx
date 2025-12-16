@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import MediaiLogo from "@/components/shared/MediaiLogo";
 import { Check, Sparkles, Zap, Crown, ArrowLeft } from "lucide-react";
 
 type PlanTier = "ESSENTIAL" | "PROFESSIONAL" | "PREMIUM";
@@ -144,14 +144,7 @@ export default function PricingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3">
             <ArrowLeft className="h-5 w-5 text-slate-400" />
-            <Image
-              src="/images/logo.svg"
-              alt="Mediai Logo"
-              width={130}
-              height={40}
-              className="h-9 w-auto object-contain"
-              priority
-            />
+            <MediaiLogo size="md" darkMode={true} />
           </Link>
           <button
             onClick={() => setLang(lang === "ar" ? "en" : "ar")}

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
+import MediaiLogo from "@/components/shared/MediaiLogo";
 import {
   ArrowRight,
   Bot,
@@ -71,14 +71,7 @@ export default function LandingPage() {
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <a href="/" className="flex items-center">
-              <Image
-                src="/images/logo.svg"
-                alt="Mediai Logo"
-                width={150}
-                height={45}
-                className="h-10 w-auto object-contain"
-                priority
-              />
+              <MediaiLogo size="md" darkMode={true} />
             </a>
             <div className="flex items-center gap-4">
               <a 

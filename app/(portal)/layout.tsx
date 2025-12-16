@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from "react";
 import { Moon, Sun, Globe, ChevronDown, Check } from "lucide-react";
-import Image from "next/image";
+import MediaiLogo from "@/components/shared/MediaiLogo";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌍 TRANSLATIONS
@@ -259,14 +259,7 @@ export default function PortalLayout({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
               {/* Logo */}
               <a href="/" className="flex items-center space-x-3">
-                <Image
-                  src="/images/logo.svg"
-                  alt="Mediai Logo"
-                  width={140}
-                  height={40}
-                  className="h-10 w-auto object-contain"
-                  priority
-                />
+                <MediaiLogo size="md" darkMode={isDarkMode} />
               </a>
 
               {/* Right Controls */}
