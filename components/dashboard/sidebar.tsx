@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Sparkles,
   Bell,
 } from "lucide-react";
 
@@ -30,15 +30,16 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/5 bg-slate-900/95 backdrop-blur-xl">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-white/5 px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400">
-          <Sparkles className="h-5 w-5 text-slate-900" />
-        </div>
-        <div>
-          <p className="font-semibold text-white">Hayat AI</p>
-          <p className="text-xs text-slate-400">لوحة التحكم</p>
-        </div>
-      </div>
+      <Link href="/" className="flex h-16 items-center gap-3 border-b border-white/5 px-6 hover:bg-white/5 transition-colors">
+        <Image
+          src="/images/logo.png"
+          alt="Mediai Logo"
+          width={120}
+          height={36}
+          className="h-9 w-auto object-contain brightness-0 invert"
+          priority
+        />
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">

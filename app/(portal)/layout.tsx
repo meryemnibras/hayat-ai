@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext } from "react";
-import { Heart, Moon, Sun, Globe, ChevronDown, Check } from "lucide-react";
+import { Moon, Sun, Globe, ChevronDown, Check } from "lucide-react";
+import Image from "next/image";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌍 TRANSLATIONS
@@ -257,19 +258,16 @@ export default function PortalLayout({
           <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                  <Heart className="text-white" size={22} />
-                </div>
-                <div className="hidden sm:flex flex-col">
-                  <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                    Hayat AI
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {t("patientPortal")}
-                  </span>
-                </div>
-              </div>
+              <a href="/" className="flex items-center space-x-3">
+                <Image
+                  src="/images/logo.png"
+                  alt="Mediai Logo"
+                  width={140}
+                  height={40}
+                  className="h-10 w-auto object-contain"
+                  priority
+                />
+              </a>
 
               {/* Right Controls */}
               <div className="flex items-center space-x-2 sm:space-x-4">

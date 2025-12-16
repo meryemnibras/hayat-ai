@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import {
   ArrowRight,
   Bot,
@@ -55,9 +56,9 @@ const steps = [
 ];
 
 export const metadata: Metadata = {
-  title: "Hayat AI | منصة عيادات تجميل مدعومة بالذكاء الاصطناعي",
+  title: "Mediai | AI Medical Concierge - منصة عيادات تجميل مدعومة بالذكاء الاصطناعي",
   description:
-    "منصة موحدة لإدارة العيادات التجميلية مع مساعد ذكاء اصطناعي، حجوزات ذكية، ولوحة تحكم موحدة للأطباء.",
+    "Mediai - منصة موحدة لإدارة العيادات التجميلية مع مساعد ذكاء اصطناعي، حجوزات ذكية، ولوحة تحكم موحدة للأطباء.",
 };
 
 export default function LandingPage() {
@@ -66,11 +67,47 @@ export default function LandingPage() {
       <div className="relative isolate overflow-hidden">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_#22d3ee26,_transparent_35%),_radial-gradient(circle_at_20%_40%,_#8b5cf621,_transparent_32%),_radial-gradient(circle_at_80%_30%,_#22c55e1c,_transparent_30%)]" />
 
+        {/* Navigation Bar */}
+        <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <a href="/" className="flex items-center">
+              <Image
+                src="/images/logo.png"
+                alt="Mediai Logo"
+                width={150}
+                height={45}
+                className="h-10 w-auto object-contain"
+                priority
+              />
+            </a>
+            <div className="flex items-center gap-4">
+              <a 
+                href="/portal/portal" 
+                className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-white"
+              >
+                بوابة المريض
+              </a>
+              <a 
+                href="/dashboard" 
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-slate-50 transition hover:border-cyan-200/50 hover:text-cyan-100"
+              >
+                لوحة التحكم
+              </a>
+              <a 
+                href="/pricing" 
+                className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+              >
+                ابدأ الآن
+              </a>
+            </div>
+          </div>
+        </nav>
+
         <header className="mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-20 pt-16">
           <div className="flex flex-col items-center gap-6 text-center md:items-start md:text-left">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-cyan-200">
               <Sparkles className="h-4 w-4" />
-              منصة Hayat AI للعيادات التجميلية
+              منصة Mediai للعيادات التجميلية
             </span>
             <h1 className="text-balance text-4xl font-semibold leading-tight md:text-5xl">
               مساعد ذكاء اصطناعي وتشغيل آلي كامل
@@ -176,7 +213,7 @@ export default function LandingPage() {
               جاهز للانطلاق
             </p>
             <h3 className="mt-3 text-2xl font-semibold text-white">
-              Hayat AI يبقي عيادتك متصلة دائماً
+              Mediai يبقي عيادتك متصلة دائماً
             </h3>
             <p className="mt-3 text-sm text-slate-300/80">
               جرّب المساعد الذكي، فعل التدفقات، وراقب تحسن رضى المرضى والحجوزات
