@@ -88,7 +88,7 @@ export default function DashboardLayout({
               <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4">
                 <Link href="/" className="flex items-center gap-3">
                   {sidebarOpen ? (
-                    <MediaiLogo size="sm" darkMode={isDarkMode} />
+                    <MediaiLogo size="sm" />
                   ) : (
                     <MediaiIcon size={40} />
                   )}

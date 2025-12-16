@@ -259,7 +259,7 @@ export default function PortalLayout({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
               {/* Logo */}
               <a href="/" className="flex items-center space-x-3">
-                <MediaiLogo size="md" darkMode={isDarkMode} />
+                <MediaiLogo size="md" />
               </a>
 
               {/* Right Controls */}

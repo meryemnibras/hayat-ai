@@ -513,7 +513,7 @@ export default function PatientPortalPage() {
         {isSidebarOpen && (
           <div className="p-4 border-b dark:border-gray-700">
             <a href="/" className="flex items-center justify-center">
-              <MediaiLogo size="sm" darkMode={isDarkMode} />
+              <MediaiLogo size="sm" />
             </a>
           </div>
         )}
