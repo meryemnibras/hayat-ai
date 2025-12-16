@@ -1305,10 +1305,12 @@ export default function PatientPortalPage() {
                 )}
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {t(activeView as keyof typeof translations.en)}
+                {activeView === "appointments" ? t("appointments") : 
+                 activeView === "records" ? t("medicalRecords") : 
+                 t("notifications")}
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
-                This section is coming soon...
+                {isRTL ? "هذا القسم قيد التطوير..." : "This section is coming soon..."}
               </p>
             </div>
           )}
