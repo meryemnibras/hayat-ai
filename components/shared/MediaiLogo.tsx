@@ -11,10 +11,11 @@ interface MediaiLogoProps {
 }
 
 const sizeConfig = {
-  sm: { width: 100, height: 30 },
-  md: { width: 140, height: 42 },
-  lg: { width: 180, height: 54 },
-  xl: { width: 220, height: 66 },
+  // مقاسات مضبوطة لتناسب الهيدر والفوتر مع اللوجو الأفقي
+  sm: { width: 90, height: 26 },
+  md: { width: 120, height: 34 },
+  lg: { width: 150, height: 42 },
+  xl: { width: 190, height: 52 },
 };
 
 export default function MediaiLogo({
@@ -26,7 +27,7 @@ export default function MediaiLogo({
 
   const LogoImage = () => (
     <Image
-      src="/images/logo.png"
+      src="/images/Black_And_White_Aesthetic_Minimalist_Modern_Simple_Typography_Coconut_Cosmetics_Logo__2_-removebg-preview.png"
       alt="Mediai - AI Medical Concierge"
       width={config.width}
       height={config.height}

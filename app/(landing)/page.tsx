@@ -361,7 +361,7 @@ export default function LandingPage() {
                           }}
                         >
                           {name}
-                        </button>
+              </button>
                       )
                     )}
                   </div>
@@ -640,8 +640,8 @@ export default function LandingPage() {
                     <Icon size={24} />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-3">
-                    {feature.title}
-                  </h3>
+                  {feature.title}
+                </h3>
                   <p className="text-slate-600 leading-relaxed">{feature.description}</p>
                 </div>
               );
@@ -657,7 +657,7 @@ export default function LandingPage() {
             </button>
           </div>
         </div>
-      </section>
+          </section>
 
       {/* ━━━ PRICING SECTION ━━━ */}
       <section id="pricing" className="py-24 bg-white">
@@ -669,11 +669,11 @@ export default function LandingPage() {
                 Transparent
               </span>{" "}
               Pricing
-            </h2>
+                </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Choose the plan that fits your clinic's needs
             </p>
-          </div>
+            </div>
 
           <div className="flex flex-col lg:flex-row justify-center gap-8">
             {pricingTiers.map((tier, index) => {
@@ -725,7 +725,7 @@ export default function LandingPage() {
                         className={tier.mostPopular ? "text-white/70" : "text-slate-500"}
                       >
                         {tier.period}
-                      </span>
+                    </span>
                     </div>
                     <p
                       className={`mt-2 ${
@@ -768,8 +768,8 @@ export default function LandingPage() {
               );
             })}
           </div>
-        </div>
-      </section>
+            </div>
+          </section>
 
       {/* ━━━ TESTIMONIALS SECTION ━━━ */}
       <section id="testimonials" className="py-24 bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50">
@@ -824,7 +824,7 @@ export default function LandingPage() {
             <div>
               <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
                 Ready to transform your patient experience?
-              </h3>
+            </h3>
               <p className="text-slate-600">
                 Join 100+ premium aesthetic clinics already using Mediai
               </p>
@@ -930,7 +930,7 @@ export default function LandingPage() {
               onClick={() => setShowDemoModal(false)}
             >
               <X size={24} />
-            </button>
+              </button>
 
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -990,8 +990,8 @@ export default function LandingPage() {
                 Request Demo
               </button>
             </form>
-          </div>
-        </div>
+            </div>
+      </div>
       )}
 
       {/* ━━━ CUSTOM ANIMATIONS ━━━ */}
