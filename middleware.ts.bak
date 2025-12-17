@@ -14,8 +14,9 @@ const securityHeaders = {
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
-  const hostname =
-    request.headers.get("host")?.toLowerCase() || url.hostname.toLowerCase();
+  // Use Host header if available (Vercel), fallback to nextUrl.hostname (local dev)
+  const rawHost = request.headers.get("host") || url.hostname;
+  const hostname = rawHost.toLowerCase().split(":")[0]; // strip port if exists
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🔀 Domain-based routing
@@ -27,29 +28,42 @@ export function middleware(request: NextRequest) {
   //
   // نعيد كتابة المسار فقط إذا كان المسار الأصلي "/" حتى لا ندخل في loop.
 
+  let target: "landing" | "dashboard" | "portal" | "default" = "default";
+
   if (url.pathname === "/") {
-    if (hostname.startsWith("app.mediai.tr")) {
+    if (hostname === "app.mediai.tr" || hostname.endsWith(".app.mediai.tr")) {
       url.pathname = "/dashboard";
+      target = "dashboard";
       const rewritten = NextResponse.rewrite(url);
-      addSecurityHeaders(rewritten);
+      addSecurityHeaders(rewritten, hostname, target);
       return rewritten;
     }
 
-    if (hostname.startsWith("portal.mediai.tr")) {
+    if (hostname === "portal.mediai.tr" || hostname.endsWith(".portal.mediai.tr")) {
       url.pathname = "/portal";
+      target = "portal";
       const rewritten = NextResponse.rewrite(url);
-      addSecurityHeaders(rewritten);
+      addSecurityHeaders(rewritten, hostname, target);
       return rewritten;
+    }
+
+    // Root domain: treat as landing explicitly
+    if (hostname === "mediai.tr" || hostname.endsWith(".mediai.tr")) {
+      target = "landing";
     }
   }
 
   // Default behaviour for all other routes / domains
   const response = NextResponse.next();
-  addSecurityHeaders(response);
+  addSecurityHeaders(response, hostname, target);
   return response;
 }
 
-function addSecurityHeaders(response: NextResponse) {
+function addSecurityHeaders(
+  response: NextResponse,
+  hostname?: string,
+  target?: string
+) {
   // Add security headers
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
@@ -72,6 +86,14 @@ function addSecurityHeaders(response: NextResponse) {
   ].join("; ");
 
   response.headers.set("Content-Security-Policy", csp);
+
+  // Debug headers to verify behaviour in production
+  if (hostname) {
+    response.headers.set("x-domain", hostname);
+  }
+  if (target) {
+    response.headers.set("x-target", target);
+  }
 }
 
 export const config = {
