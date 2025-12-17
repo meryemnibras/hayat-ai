@@ -13,9 +13,43 @@ const securityHeaders = {
 };
 
 export function middleware(request: NextRequest) {
-  // Get response
-  const response = NextResponse.next();
+  const url = request.nextUrl.clone();
+  const hostname =
+    request.headers.get("host")?.toLowerCase() || url.hostname.toLowerCase();
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔀 Domain-based routing
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //
+  // mediai.tr           → Landing page  ("/")
+  // app.mediai.tr       → Dashboard app ("/dashboard")
+  // portal.mediai.tr    → Patient portal ("/portal")
+  //
+  // نعيد كتابة المسار فقط إذا كان المسار الأصلي "/" حتى لا ندخل في loop.
+
+  if (url.pathname === "/") {
+    if (hostname.startsWith("app.mediai.tr")) {
+      url.pathname = "/dashboard";
+      const rewritten = NextResponse.rewrite(url);
+      addSecurityHeaders(rewritten);
+      return rewritten;
+    }
+
+    if (hostname.startsWith("portal.mediai.tr")) {
+      url.pathname = "/portal";
+      const rewritten = NextResponse.rewrite(url);
+      addSecurityHeaders(rewritten);
+      return rewritten;
+    }
+  }
+
+  // Default behaviour for all other routes / domains
+  const response = NextResponse.next();
+  addSecurityHeaders(response);
+  return response;
+}
+
+function addSecurityHeaders(response: NextResponse) {
   // Add security headers
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
@@ -38,8 +72,6 @@ export function middleware(request: NextRequest) {
   ].join("; ");
 
   response.headers.set("Content-Security-Policy", csp);
-
-  return response;
 }
 
 export const config = {
@@ -48,4 +80,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
-
