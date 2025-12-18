@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { Mail, MessageCircle } from "lucide-react";
+import { Mail, MessageCircle, Phone } from "lucide-react";
 import MediaiLogo from "./MediaiLogo";
 import Link from "next/link";
 
 export default function LandingFooter() {
   const whatsappNumber = "00905362266054";
+  const phoneNumber = "00905362266054";
   const email = "info@mediai.tr";
   const whatsappLink = `https://wa.me/${whatsappNumber.replace(/^00/, "")}`;
 
@@ -31,6 +32,17 @@ export default function LandingFooter() {
               Contact
             </h3>
             <div className="flex flex-col space-y-3">
+              {/* Phone */}
+              <a
+                href={`tel:${phoneNumber}`}
+                className="flex items-center space-x-3 text-slate-300 hover:text-cyan-400 transition-colors group"
+              >
+                <div className="p-2 bg-cyan-500/10 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                  <Phone className="h-5 w-5 text-cyan-400" />
+                </div>
+                <span className="text-sm">{phoneNumber}</span>
+              </a>
+
               {/* WhatsApp */}
               <a
                 href={whatsappLink}

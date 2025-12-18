@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
 
   // Turbopack config (empty to enable Turbopack)
   turbopack: {},
+
+  // Force revalidation to prevent cache issues
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
+  },
 };
 
 export default nextConfig;
