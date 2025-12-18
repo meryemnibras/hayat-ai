@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
     // Rewrite paths like /register, /login to /portal/register, /portal/login
-    if (url.pathname.startsWith("/register") || url.pathname.startsWith("/login")) {
+    if (url.pathname === "/register" || url.pathname === "/login") {
       url.pathname = `/portal${url.pathname}`;
       return NextResponse.rewrite(url);
     }
@@ -39,6 +39,7 @@ export function middleware(request: NextRequest) {
 
   // mediai.tr → landing page (default, no rewrite needed)
   // The root page.tsx already handles this
+  // For /portal/* routes on mediai.tr, let them pass through normally
 
   return NextResponse.next();
 }
@@ -53,7 +54,7 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files (images, etc.)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|jpeg)$).*)",
   ],
 };
 
