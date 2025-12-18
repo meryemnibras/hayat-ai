@@ -3,7 +3,7 @@
 import React from "react";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Sidebar } from "@/components/dashboard/sidebar";
-import Footer from "@/components/shared/Footer";
+import LandingFooter from "@/components/shared/LandingFooter";
 
 export default function DashboardLayout({
   children,
@@ -39,7 +39,7 @@ export default function DashboardLayout({
           <main className="p-8">{children}</main>
 
           {/* Footer */}
-          <Footer />
+          <LandingFooter />
         </div>
       </div>
     </QueryProvider>
