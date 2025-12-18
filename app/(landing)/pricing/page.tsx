@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import Footer from "@/components/shared/Footer";
 
 type PlanTier = "ESSENTIAL" | "PROFESSIONAL" | "PREMIUM";
 
@@ -254,6 +255,9 @@ export default function PricingPage() {
             : "All plans include a 14-day free trial. Cancel anytime."}
         </p>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

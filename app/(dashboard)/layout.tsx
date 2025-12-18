@@ -3,6 +3,7 @@
 import React from "react";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import Footer from "@/components/shared/Footer";
 
 export default function DashboardLayout({
   children,
@@ -36,6 +37,9 @@ export default function DashboardLayout({
 
           {/* Page Content */}
           <main className="p-8">{children}</main>
+
+          {/* Footer */}
+          <Footer />
         </div>
       </div>
     </QueryProvider>
