@@ -54,82 +54,106 @@ enum MessageSender {
 }
 
 model Clinic {
-  id             String          @id @default(cuid())
-  name           String
-  slug           String          @unique
-  phone          String?
-  email          String?
-  timezone       String?         @default("UTC")
-  addressLine1   String?
-  city           String?
-  country        String?
-  users          User[]
-  patients       Patient[]
-  appointments   Appointment[]
-  conversations  Conversation[]
-  subscription   Subscription?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  phone         String?
+  email         String?
+  timezone      String?        @default("UTC")
+  addressLine1  String?
+  city          String?
+  country       String?
+  users         User[]
+  patients      Patient[]
+  appointments  Appointment[]
+  conversations Conversation[]
+  subscription  Subscription?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([name])
   @@index([slug])
 }
 
 model User {
-  id          String    @id @default(cuid())
-  clinicId    String
-  clinic      Clinic    @relation(fields: [clinicId], references: [id])
-  fullName    String
-  email       String    @unique
-  phone       String?
-  clerkId     String?   @unique
-  role        UserRole
-  title       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  notes       String?
+  id           String        @id @default(cuid())
+  clinicId     String
+  clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  fullName     String
+  email        String        @unique
+  phone        String?
+  clerkId      String?       @unique
+  role         UserRole
+  title        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  notes        String?
   appointments Appointment[] @relation("ProviderAppointments")
 
   @@index([clinicId, role])
 }
 
 model Patient {
-  id            String          @id @default(cuid())
-  clinicId      String
-  clinic        Clinic          @relation(fields: [clinicId], references: [id])
-  fullName      String
-  email         String?
-  phone         String?
-  dateOfBirth   DateTime?
-  gender        Gender?         @default(UNSPECIFIED)
-  notes         String?
-  tags          String[]        @default([])
-  appointments  Appointment[]
-  conversations Conversation[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                    String         @id @default(cuid())
+  clinicId              String
+  clinic                Clinic         @relation(fields: [clinicId], references: [id])
+  fullName              String
+  email                 String?
+  phone                 String?
+  dateOfBirth           DateTime?
+  gender                Gender?        @default(UNSPECIFIED)
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  medicalHistorySummary String?
+  allergies             String?
+  preferredLanguage     String?
+  notes                 String?
+  tags                  String[]       @default([])
+  appointments          Appointment[]
+  conversations         Conversation[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   @@index([clinicId, fullName])
   @@index([clinicId, phone])
 }
 
+model Doctor {
+  id                   String   @id @default(cuid())
+  fullName             String
+  specialization       String
+  email                String   @unique
+  phoneNumber          String
+  licenseNumber        String   @unique
+  yearsExperience      Int
+  hospitalAffiliation  String?
+  availabilitySchedule Json? // JSON format: { "monday": ["09:00-17:00"], ... }
+  languagesSpoken      String[] @default([])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([specialization])
+  @@index([email])
+}
+
 model Appointment {
-  id           String             @id @default(cuid())
-  clinicId     String
-  clinic       Clinic             @relation(fields: [clinicId], references: [id])
-  patientId    String
-  patient      Patient            @relation(fields: [patientId], references: [id])
-  providerId   String?
-  provider     User?              @relation("ProviderAppointments", fields: [providerId], references: [id])
-  status       AppointmentStatus  @default(SCHEDULED)
-  source       AppointmentSource  @default(WEB)
-  title        String?
-  startTime    DateTime
-  endTime      DateTime?
-  location     String?
-  notes        String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id         String            @id @default(cuid())
+  clinicId   String
+  clinic     Clinic            @relation(fields: [clinicId], references: [id])
+  patientId  String
+  patient    Patient           @relation(fields: [patientId], references: [id])
+  providerId String?
+  provider   User?             @relation("ProviderAppointments", fields: [providerId], references: [id])
+  status     AppointmentStatus @default(SCHEDULED)
+  source     AppointmentSource @default(WEB)
+  title      String?
+  startTime  DateTime
+  endTime    DateTime?
+  location   String?
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@index([clinicId, startTime])
   @@index([patientId, startTime])
@@ -137,19 +161,19 @@ model Appointment {
 }
 
 model Conversation {
-  id             String               @id @default(cuid())
-  clinicId       String
-  clinic         Clinic               @relation(fields: [clinicId], references: [id])
-  patientId      String
-  patient        Patient              @relation(fields: [patientId], references: [id])
-  channel        ConversationChannel  @default(CHAT)
-  status         ConversationStatus   @default(OPEN)
-  subject        String?
-  startedAt      DateTime             @default(now())
-  lastMessageAt  DateTime?
-  messages       Message[]
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id            String              @id @default(cuid())
+  clinicId      String
+  clinic        Clinic              @relation(fields: [clinicId], references: [id])
+  patientId     String
+  patient       Patient             @relation(fields: [patientId], references: [id])
+  channel       ConversationChannel @default(CHAT)
+  status        ConversationStatus  @default(OPEN)
+  subject       String?
+  startedAt     DateTime            @default(now())
+  lastMessageAt DateTime?
+  messages      Message[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@index([clinicId, status])
   @@index([patientId, status])
@@ -157,14 +181,14 @@ model Conversation {
 }
 
 model Message {
-  id              String         @id @default(cuid())
-  conversationId  String
-  conversation    Conversation   @relation(fields: [conversationId], references: [id])
-  senderType      MessageSender
-  senderId        String?
-  content         String
-  metadata        Json?
-  createdAt       DateTime       @default(now())
+  id             String        @id @default(cuid())
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id])
+  senderType     MessageSender
+  senderId       String?
+  content        String
+  metadata       Json?
+  createdAt      DateTime      @default(now())
 
   @@index([conversationId, createdAt])
 }
