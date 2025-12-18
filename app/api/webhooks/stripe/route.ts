@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { getStripe } from "@/lib/billing/stripe";
+import { stripe } from "@/lib/billing/stripe";
 import { prisma } from "@/lib/prisma";
 import { PlanTier } from "@/lib/billing/plans";
 
@@ -62,7 +62,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const customerId = session.customer as string;
 
   // Retrieve subscription details
-  const subscriptionResponse = await getStripe().subscriptions.retrieve(subscriptionId);
+  const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
   const subscription = subscriptionResponse as unknown as SubscriptionWithPeriod;
   const priceId = subscription.items.data[0]?.price.id;
   const tier = getTierFromPriceId(priceId);
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

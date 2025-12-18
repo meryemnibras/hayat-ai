@@ -1,28 +1,13 @@
 import Stripe from "stripe";
 
-let stripeClient: Stripe | null = null;
-
-function getStripe(): Stripe {
-  if (stripeClient) return stripeClient;
-
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY is not set");
-  }
-
-  stripeClient = new Stripe(secretKey, {
-    apiVersion: "2025-11-17.clover",
-    typescript: true,
-  });
-
-  return stripeClient;
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("STRIPE_SECRET_KEY is not set");
 }
 
-export const stripe = {
-  get client() {
-    return getStripe();
-  },
-};
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2025-04-30.basil",
+  typescript: true,
+});
 
 export async function createCheckoutSession({
   clinicId,
@@ -37,7 +22,7 @@ export async function createCheckoutSession({
   successUrl: string;
   cancelUrl: string;
 }): Promise<Stripe.Checkout.Session> {
-  const session = await getStripe().checkout.sessions.create({
+  const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
     customer_email: clinicEmail,
@@ -60,7 +45,7 @@ export async function createCustomerPortalSession({
   customerId: string;
   returnUrl: string;
 }): Promise<Stripe.BillingPortal.Session> {
-  const session = await getStripe().billingPortal.sessions.create({
+  const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
   });
@@ -72,19 +57,18 @@ export async function cancelSubscription(
   cancelAtPeriodEnd = true
 ): Promise<Stripe.Subscription> {
   if (cancelAtPeriodEnd) {
-    return getStripe().subscriptions.update(subscriptionId, {
+    return stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     });
   }
-  return getStripe().subscriptions.cancel(subscriptionId);
+  return stripe.subscriptions.cancel(subscriptionId);
 }
 
 export async function resumeSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription> {
-  return getStripe().subscriptions.update(subscriptionId, {
+  return stripe.subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
   });
 }
 
-export { getStripe };

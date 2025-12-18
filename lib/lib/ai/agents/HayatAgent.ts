@@ -21,78 +21,64 @@ const LANGUAGE_LABEL: Record<SupportedLang, string> = {
 const systemPromptBase = `
 أنت "Hayat Agent" مساعد ذكاء اصطناعي للعيادات التجميلية.
 - استقبل المريض بلغة دافئة ومتعاطفة، ورد بنفس لغة المريض (عربي، تركي، إنجليزي، فرنسي).
-- تحلَّى بحساسية ثقافية خاصة بالخليج وتركيا (اللهجات واللباقة المحلية).
+- تحلَّى بحساسية ثقافية خاصة بالخليج وتركيا (اللهجات واللباقة المحلية).
 - لا تقدم تشخيصات طبية. قدّم معلومات عامة فقط ووجّه للحجز مع مختص عند الحاجة.
 - احمِ خصوصية المريض ولا تطلب بيانات حساسة إلا للضرورة (بحدود الحجز والمتابعة).
 - إذا احتجت إجراءً (حجز، استعلام، توصية، تصعيد لموظف) استخدم الأدوات المتاحة.
 `;
 
-// Tool schemas
-const scheduleAppointmentSchema = z.object({
-  patientId: z.string().optional().describe("معرف المريض"),
-  preferredDate: z.string().optional().describe("التاريخ المفضل"),
-  notes: z.string().optional().describe("ملاحظات إضافية"),
-});
-
-const getPatientInfoSchema = z.object({
-  patientId: z.string().describe("معرف المريض"),
-  fields: z.array(z.string()).optional().describe("الحقول المطلوبة"),
-});
-
-const recommendTreatmentSchema = z.object({
-  concern: z.string().describe("الهدف أو المشكلة التجميلية"),
-  preferences: z.string().optional().describe("تفضيلات المريض"),
-});
-
-const escalateToHumanSchema = z.object({
-  reason: z.string().describe("سبب التصعيد"),
-  urgency: z.enum(["low", "normal", "high"]).default("normal").describe("مستوى الأهمية"),
-});
-
-// Create tools with the correct 2-argument signature
-const scheduleAppointmentTool = tool(
-  async (input: z.infer<typeof scheduleAppointmentSchema>) => {
+const scheduleAppointmentTool = tool({
+  name: "schedule_appointment",
+  description:
+    "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.",
+  schema: z.object({
+    patientId: z.string().optional(),
+    preferredDate: z.string().optional(),
+    notes: z.string().optional(),
+  }),
+  async invoke(input) {
     return `تم إنشاء طلب حجز (تجريبي) للمريض=${input.patientId ?? "غير محدد"} في الوقت=${input.preferredDate ?? "سيتم التنسيق"} مع ملاحظة=${input.notes ?? "لا توجد"}.`;
   },
-  {
-    name: "schedule_appointment",
-    description: "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.",
-    schema: scheduleAppointmentSchema,
-  }
-);
+});
 
-const getPatientInfoTool = tool(
-  async (input: z.infer<typeof getPatientInfoSchema>) => {
+const getPatientInfoTool = tool({
+  name: "get_patient_info",
+  description:
+    "جلب بيانات المريض الأساسية أو تاريخ زياراته قبل الرد بتفاصيل شخصية.",
+  schema: z.object({
+    patientId: z.string(),
+    fields: z.array(z.string()).optional(),
+  }),
+  async invoke(input) {
     return `بيانات المريض (تجريبية) patientId=${input.patientId}, fields=${input.fields?.join(", ") ?? "الكل"}.`;
   },
-  {
-    name: "get_patient_info",
-    description: "جلب بيانات المريض الأساسية أو تاريخ زياراته قبل الرد بتفاصيل شخصية.",
-    schema: getPatientInfoSchema,
-  }
-);
+});
 
-const recommendTreatmentTool = tool(
-  async (input: z.infer<typeof recommendTreatmentSchema>) => {
+const recommendTreatmentTool = tool({
+  name: "recommend_treatment",
+  description:
+    "اقتراح خيارات علاج تجميلي عامة بناءً على هدف المريض (بدون تشخيص).",
+  schema: z.object({
+    concern: z.string(),
+    preferences: z.string().optional(),
+  }),
+  async invoke(input) {
     return `توصيات عامة (تجريبية) لاحتياج: ${input.concern} مع تفضيلات: ${input.preferences ?? "لا توجد"}.`;
   },
-  {
-    name: "recommend_treatment",
-    description: "اقتراح خيارات علاج تجميلي عامة بناءً على هدف المريض (بدون تشخيص).",
-    schema: recommendTreatmentSchema,
-  }
-);
+});
 
-const escalateToHumanTool = tool(
-  async (input: z.infer<typeof escalateToHumanSchema>) => {
+const escalateToHumanTool = tool({
+  name: "escalate_to_human",
+  description:
+    "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.",
+  schema: z.object({
+    reason: z.string(),
+    urgency: z.enum(["low", "normal", "high"]).default("normal"),
+  }),
+  async invoke(input) {
     return `تم إنشاء تذكرة تصعيد (تجريبية) بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.`;
   },
-  {
-    name: "escalate_to_human",
-    description: "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.",
-    schema: escalateToHumanSchema,
-  }
-);
+});
 
 export class HayatAgent {
   private model: ChatOpenAI;
@@ -125,7 +111,7 @@ export class HayatAgent {
   private buildSystemMessage(lang: SupportedLang) {
     const langLabel = LANGUAGE_LABEL[lang];
     return new SystemMessage(
-      `${systemPromptBase}\n- اللغة المرغوبة للرد: ${langLabel}\n- حافظ على نبرة لطيفة ومطمئنة.`
+      `${systemPromptBase}\n- اللغة المرغوبة للرد: ${langLabel}\n- حافظ على نبرة لطيفة ومطمئنة.`,
     );
   }
 
@@ -146,28 +132,14 @@ export class HayatAgent {
 
     const toolResults: ToolMessage[] = [];
     for (const call of initial.tool_calls) {
-      let result: string;
-      switch (call.name) {
-        case "schedule_appointment":
-          result = await scheduleAppointmentTool.invoke(call.args as z.infer<typeof scheduleAppointmentSchema>);
-          break;
-        case "get_patient_info":
-          result = await getPatientInfoTool.invoke(call.args as z.infer<typeof getPatientInfoSchema>);
-          break;
-        case "recommend_treatment":
-          result = await recommendTreatmentTool.invoke(call.args as z.infer<typeof recommendTreatmentSchema>);
-          break;
-        case "escalate_to_human":
-          result = await escalateToHumanTool.invoke(call.args as z.infer<typeof escalateToHumanSchema>);
-          break;
-        default:
-          continue;
-      }
+      const toolImpl = this.tools.find((t) => t.name === call.name);
+      if (!toolImpl) continue;
+      const result = await toolImpl.invoke(call.args);
       toolResults.push(
         new ToolMessage({
-          tool_call_id: call.id ?? `tool_${Date.now()}`,
+          tool_call_id: call.id,
           content: result,
-        })
+        }),
       );
     }
 
@@ -192,7 +164,7 @@ export class HayatAgent {
   async analyze(text: string) {
     const prompt = ChatPromptTemplate.fromMessages([
       new SystemMessage(
-        `${systemPromptBase}\nحلّل النص التالي واستخرج ملخصاً موجزاً مع النقاط الرئيسية والطلبات. لا تشخيصات طبية.`
+        `${systemPromptBase}\nحلّل النص التالي واستخرج ملخصاً موجزاً مع النقاط الرئيسية والطلبات. لا تشخيصات طبية.`,
       ),
       new HumanMessage(text),
     ]);
@@ -209,3 +181,6 @@ export function getHayatAgent() {
   }
   return singleton;
 }
+
+
+

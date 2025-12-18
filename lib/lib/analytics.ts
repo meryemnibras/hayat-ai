@@ -1,8 +1,7 @@
 // Analytics utility for tracking events
 // Supports PostHog (recommended) or custom implementation
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type EventProperties = Record<string, any>;
+type EventProperties = Record<string, string | number | boolean | null>;
 
 interface AnalyticsUser {
   id: string;

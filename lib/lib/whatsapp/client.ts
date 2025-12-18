@@ -1,39 +1,29 @@
 import twilio from "twilio";
-import type { Twilio } from "twilio";
 
-let twilioClient: Twilio | null = null;
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const fromNumber = process.env.TWILIO_WHATSAPP_FROM; // format: whatsapp:+123456789
 
-function getTwilioClient(): Twilio | null {
-  if (twilioClient) return twilioClient;
-
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-  if (!accountSid || !authToken) {
-    console.warn(
-      "[WhatsApp] Missing TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN"
-    );
-    return null;
-  }
-
-  twilioClient = twilio(accountSid, authToken);
-  return twilioClient;
+if (!accountSid || !authToken || !fromNumber) {
+  console.warn(
+    "[WhatsApp] Missing TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_WHATSAPP_FROM",
+  );
 }
 
-export async function sendWhatsAppMessage(to: string, body: string) {
-  const client = getTwilioClient();
-  const fromNumber = process.env.TWILIO_WHATSAPP_FROM;
+export const twilioClient =
+  accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-  if (!client || !fromNumber) {
+export async function sendWhatsAppMessage(to: string, body: string) {
+  if (!twilioClient || !fromNumber) {
     throw new Error("Twilio WhatsApp client is not configured.");
   }
-
   const normalizedTo = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-  return client.messages.create({
+  return twilioClient.messages.create({
     from: fromNumber,
     to: normalizedTo,
     body,
   });
 }
 
-export { getTwilioClient as twilioClient };
+
+

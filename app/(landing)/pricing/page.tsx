@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
-import MediaiLogo from "@/components/shared/MediaiLogo";
-import { Check, Sparkles, Zap, Crown, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, Zap, Crown } from "lucide-react";
 
 type PlanTier = "ESSENTIAL" | "PROFESSIONAL" | "PREMIUM";
 
@@ -139,25 +137,15 @@ export default function PricingPage() {
       {/* Decorative background */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_#22d3ee15,_transparent_40%),_radial-gradient(circle_at_80%_60%,_#8b5cf615,_transparent_35%)]" />
 
-      {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            <ArrowLeft className="h-5 w-5 text-slate-400" />
-            <MediaiLogo size="md" />
-          </Link>
-          <button
-            onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-            className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-slate-300 transition hover:bg-white/10"
-          >
-            {lang === "ar" ? "English" : "عربي"}
-          </button>
-        </div>
-      </nav>
-
       <div className="relative mx-auto max-w-6xl px-6 py-20">
         {/* Header */}
         <div className="mb-16 text-center">
+          <button
+            onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+            className="mb-6 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-slate-300 transition hover:bg-white/10"
+          >
+            {lang === "ar" ? "English" : "عربي"}
+          </button>
 
           <h1 className="mb-4 text-4xl font-bold md:text-5xl">
             {lang === "ar" ? "اختر باقتك المناسبة" : "Choose Your Plan"}
