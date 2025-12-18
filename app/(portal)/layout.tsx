@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { Moon, Sun, Globe, ChevronDown, Check } from "lucide-react";
 import MediaiLogo from "@/components/shared/MediaiLogo";
+import Footer from "@/components/shared/Footer";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🌍 TRANSLATIONS
@@ -353,6 +354,9 @@ export default function PortalLayout({
 
           {/* Main Content */}
           <main className="pt-16">{children}</main>
+
+          {/* Footer */}
+          <Footer />
         </div>
       </div>
     </PortalContext.Provider>

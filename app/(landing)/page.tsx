@@ -8,6 +8,7 @@ import {
   Sparkles,
   Stethoscope,
 } from "lucide-react";
+import Footer from "@/components/shared/Footer";
 
 const stats = [
   { label: "استجابة الذكاء الاصطناعي", value: "24/7" },
@@ -192,6 +193,9 @@ export default function LandingPage() {
             </div>
           </section>
         </main>
+
+        {/* Footer */}
+        <Footer />
       </div>
     </div>
   );
