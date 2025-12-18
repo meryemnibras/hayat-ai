@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MediaiLogo from "@/components/shared/MediaiLogo";
 import { usePortal } from "../../layout";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const { t, isRTL, language } = usePortal();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -279,6 +279,18 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
 

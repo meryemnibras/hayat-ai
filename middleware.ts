@@ -14,8 +14,14 @@ export function middleware(request: NextRequest) {
 
   // portal.mediai.tr → /portal
   if (host === "portal.mediai.tr" || host === "www.portal.mediai.tr") {
+    // Rewrite root to /portal
     if (url.pathname === "/") {
       url.pathname = "/portal";
+      return NextResponse.rewrite(url);
+    }
+    // Rewrite paths like /register, /login to /portal/register, /portal/login
+    if (url.pathname.startsWith("/register") || url.pathname.startsWith("/login")) {
+      url.pathname = `/portal${url.pathname}`;
       return NextResponse.rewrite(url);
     }
     // If already on /portal or other paths, let it pass through
