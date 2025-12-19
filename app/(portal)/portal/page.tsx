@@ -1520,17 +1520,17 @@ export default function PatientPortalPage() {
                 <div className="space-y-4">
                   <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                     <div className="flex items-center space-x-4">
-                      <img
-                        src={selectedDoctor.image}
-                        alt={selectedDoctor.name[language]}
-                        className="w-12 h-12 rounded-xl object-cover"
-                      />
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          {selectedDoctor.name[language]}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {selectedDoctor.specialty[language]}
+                    <img
+                      src={selectedDoctor.image}
+                      alt={getDoctorName(selectedDoctor)}
+                      className="w-12 h-12 rounded-xl object-cover"
+                    />
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">
+                        {getDoctorName(selectedDoctor)}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {getDoctorSpecialty(selectedDoctor)}
                         </p>
                       </div>
                     </div>
