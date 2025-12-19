@@ -254,7 +254,21 @@ export default function PatientPortalPage() {
     };
   });
 
-  // Fallback to mock data if API fails or no data
+  // Helper functions to safely access doctor name and specialty
+  const getDoctorName = (doctor: Doctor): string => {
+    if (typeof doctor.name === "string") return doctor.name;
+    return doctor.name[language] || doctor.name.en || doctor.name.ar || "";
+  };
+
+  const getDoctorSpecialty = (doctor: Doctor): string => {
+    if (typeof doctor.specialty === "string") return doctor.specialty;
+    return doctor.specialty[language] || doctor.specialty.en || doctor.specialty.ar || "";
+  };
+
+  // Use real data if available, otherwise fallback to empty array
+  const displayDoctors = doctors.length > 0 ? doctors : [];
+
+  // Fallback to mock data if API fails or no data (kept for reference, not used)
   const mockDoctors: Doctor[] = [
     {
       id: 1,
