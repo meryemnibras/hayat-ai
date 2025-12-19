@@ -37,8 +37,11 @@ import {
   ChevronLeft,
   Zap,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { usePortal } from "../layout";
+import { useDoctors } from "@/hooks/useDoctors";
+import { useAppointments } from "@/hooks/useAppointments";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 🧩 UI COMPONENTS
@@ -146,9 +149,9 @@ interface Message {
 }
 
 interface Doctor {
-  id: number;
-  name: Record<string, string>;
-  specialty: Record<string, string>;
+  id: string | number;
+  name: Record<string, string> | string;
+  specialty: Record<string, string> | string;
   experience: number;
   rating: number;
   reviews: number;
@@ -199,8 +202,60 @@ export default function PatientPortalPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const notifications = 3;
 
-  // ━━━ MOCK DATA ━━━
-  const doctors: Doctor[] = [
+  // ━━━ REAL DATA FROM API ━━━
+  const { doctors: doctorsData, loading: doctorsLoading, error: doctorsError } = useDoctors();
+  const { appointments: appointmentsData, loading: appointmentsLoading, error: appointmentsError } = useAppointments();
+
+  // Transform API doctors data to UI format
+  const doctors: Doctor[] = doctorsData.map((doc, index) => {
+    // Extract available slots from availabilitySchedule
+    const schedule = doc.availabilitySchedule as any;
+    const availableSlots: string[] = [];
+    if (schedule) {
+      Object.values(schedule).forEach((slots: any) => {
+        if (Array.isArray(slots)) {
+          slots.forEach((slot: string) => {
+            const times = slot.split("-");
+            if (times[0]) {
+              availableSlots.push(times[0]);
+            }
+          });
+        }
+      });
+    }
+
+    // Default slots if none found
+    const defaultSlots = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
+
+    return {
+      id: doc.id,
+      name: {
+        en: doc.fullName,
+        ar: doc.fullName,
+        tr: doc.fullName,
+        fr: doc.fullName,
+      },
+      specialty: {
+        en: doc.specialization,
+        ar: doc.specialization,
+        tr: doc.specialization,
+        fr: doc.specialization,
+      },
+      experience: doc.yearsExperience,
+      rating: 4.5 + Math.random() * 0.5, // Random rating between 4.5-5.0
+      reviews: Math.floor(Math.random() * 200) + 50,
+      image: `https://i.pravatar.cc/150?u=${doc.id}`,
+      languages: doc.languagesSpoken.length > 0 ? doc.languagesSpoken : ["EN", "AR"],
+      availableSlots: availableSlots.length > 0 ? availableSlots : defaultSlots,
+      nextAvailable: "Today",
+      price: "$150",
+      badges: doc.hospitalAffiliation ? ["Verified", "Hospital Affiliated"] : ["Verified"],
+      bio: `${doc.yearsExperience} years of experience in ${doc.specialization}${doc.hospitalAffiliation ? ` at ${doc.hospitalAffiliation}` : ""}`,
+    };
+  });
+
+  // Fallback to mock data if API fails or no data
+  const mockDoctors: Doctor[] = [
     {
       id: 1,
       name: {
@@ -1177,9 +1232,30 @@ export default function PatientPortalPage() {
                 </div>
               </div>
 
+              {/* Loading State */}
+              {doctorsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  <span className="ml-3 text-gray-600 dark:text-gray-400">Loading doctors...</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {doctorsError && !doctorsLoading && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200">Error loading doctors</p>
+                    <p className="text-xs text-red-600 dark:text-red-300 mt-1">{doctorsError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Doctors Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {doctors.map((doctor) => (
+              {!doctorsLoading && !doctorsError && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {displayDoctors.length > 0 ? (
+                    displayDoctors.map((doctor) => (
                   <div
                     key={doctor.id}
                     className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
@@ -1188,7 +1264,7 @@ export default function PatientPortalPage() {
                     <div className="relative h-32 bg-gradient-to-br from-blue-500 to-cyan-400">
                       <img
                         src={doctor.image}
-                        alt={doctor.name[language]}
+                        alt={getDoctorName(doctor)}
                         className="absolute bottom-0 left-6 w-24 h-24 rounded-xl border-4 border-white dark:border-gray-800 shadow-lg object-cover"
                       />
                       {doctor.badges.map((badge, index) => (
@@ -1204,10 +1280,10 @@ export default function PatientPortalPage() {
                     {/* Doctor Info */}
                     <div className="p-6 pt-8">
                       <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">
-                        {doctor.name[language]}
+                        {getDoctorName(doctor)}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {doctor.specialty[language]}
+                        {getDoctorSpecialty(doctor)}
                       </p>
 
                       {/* Stats */}
@@ -1285,8 +1361,14 @@ export default function PatientPortalPage() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-12">
+                      <p className="text-gray-500 dark:text-gray-400">No doctors available</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1367,7 +1449,7 @@ export default function PatientPortalPage() {
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                     {t("selectDoctor")}
                   </h3>
-                  {doctors.map((doctor) => (
+                  {displayDoctors.map((doctor) => (
                     <div
                       key={doctor.id}
                       onClick={() => setSelectedDoctor(doctor)}
@@ -1388,7 +1470,7 @@ export default function PatientPortalPage() {
                         />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {doctor.name[language]}
+                            {getDoctorName(doctor)}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {doctor.specialty[language]}
