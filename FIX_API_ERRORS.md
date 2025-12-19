@@ -141,3 +141,5 @@ curl http://localhost:3000/api/patients
 3. تحقق من console logs في terminal
 4. افتح Prisma Studio: `npx prisma studio`
 
+
+

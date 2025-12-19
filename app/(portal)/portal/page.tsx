@@ -347,28 +347,35 @@ export default function PatientPortalPage() {
     },
   ];
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      doctor: "Dr. Sarah Johnson",
-      specialty: "Dermatology",
-      date: "Dec 18, 2024",
-      time: "14:00",
-      type: "Follow-up",
-      status: "confirmed",
-      location: "Hayat Clinic - Downtown",
-    },
-    {
-      id: 2,
-      doctor: "Dr. Ahmed Hassan",
-      specialty: "Plastic Surgery",
-      date: "Dec 22, 2024",
-      time: "10:00",
-      type: "Consultation",
-      status: "pending",
-      location: "Hayat Clinic - West Side",
-    },
-  ];
+  // Transform appointments data from API to UI format
+  const upcomingAppointments = appointmentsData
+    .map((apt) => {
+      const appointmentDate = new Date(apt.startTime);
+      const doctor = doctors.find((d) => d.id === apt.providerId || apt.provider?.id);
+      
+      return {
+        id: apt.id,
+        appointmentDate, // Keep the Date object for filtering
+        doctor: apt.provider?.fullName || doctor ? getDoctorName(doctor) : "Unknown Doctor",
+        specialty: apt.provider?.title || doctor ? getDoctorSpecialty(doctor) : "General",
+        date: appointmentDate.toLocaleDateString(
+          language === "ar" ? "ar-SA" : language === "tr" ? "tr-TR" : "en-US",
+          { year: "numeric", month: "short", day: "numeric" }
+        ),
+        time: appointmentDate.toLocaleTimeString(
+          language === "ar" ? "ar-SA" : language === "tr" ? "tr-TR" : "en-US",
+          { hour: "2-digit", minute: "2-digit" }
+        ),
+        type: apt.title || "Consultation",
+        status: apt.status.toLowerCase(),
+        location: apt.location || apt.clinic?.addressLine1 || "Hayat Clinic",
+      };
+    })
+    .filter((apt) => {
+      // Only show upcoming appointments
+      return apt.appointmentDate >= new Date();
+    })
+    .slice(0, 5); // Limit to 5 upcoming appointments
 
   // ━━━ EFFECTS ━━━
   useEffect(() => {
@@ -1386,13 +1393,134 @@ export default function PatientPortalPage() {
             </div>
           )}
 
+          {/* ━━━ APPOINTMENTS VIEW ━━━ */}
+          {activeView === "appointments" && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <Calendar className="mr-2 text-blue-500" size={24} />
+                    {t("appointments")}
+                  </h2>
+                  <button
+                    onClick={() => setShowAppointmentModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+                  >
+                    {t("bookAppointment")}
+                  </button>
+                </div>
+
+                {/* Loading State */}
+                {appointmentsLoading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <span className="ml-3 text-gray-600 dark:text-gray-400">Loading appointments...</span>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {appointmentsError && !appointmentsLoading && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center space-x-3">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800 dark:text-red-200">Error loading appointments</p>
+                      <p className="text-xs text-red-600 dark:text-red-300 mt-1">{appointmentsError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Appointments List */}
+                {!appointmentsLoading && !appointmentsError && (
+                  <div className="space-y-3">
+                    {appointmentsData.length > 0 ? (
+                      appointmentsData.map((apt) => {
+                        const appointmentDate = new Date(apt.startTime);
+                        const doctor = doctors.find((d) => d.id === apt.providerId || apt.provider?.id);
+                        const isUpcoming = appointmentDate >= new Date();
+                        
+                        return (
+                          <div
+                            key={apt.id}
+                            className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 dark:text-white">
+                                  {apt.provider?.fullName || (doctor ? getDoctorName(doctor) : "Unknown Doctor")}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {apt.provider?.title || (doctor ? getDoctorSpecialty(doctor) : "General")}
+                                </p>
+                                {apt.title && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{apt.title}</p>
+                                )}
+                              </div>
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full ${
+                                  apt.status === "CONFIRMED" || apt.status === "confirmed"
+                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                    : apt.status === "SCHEDULED" || apt.status === "scheduled"
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                    : apt.status === "COMPLETED" || apt.status === "completed"
+                                    ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400"
+                                    : apt.status === "CANCELLED" || apt.status === "cancelled"
+                                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                }`}
+                              >
+                                {apt.status}
+                              </span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 space-x-4 mt-2">
+                              <span className="flex items-center">
+                                <Calendar size={14} className="mr-1" />
+                                {appointmentDate.toLocaleDateString(
+                                  language === "ar" ? "ar-SA" : language === "tr" ? "tr-TR" : "en-US",
+                                  { year: "numeric", month: "short", day: "numeric" }
+                                )}
+                              </span>
+                              <span className="flex items-center">
+                                <Clock size={14} className="mr-1" />
+                                {appointmentDate.toLocaleTimeString(
+                                  language === "ar" ? "ar-SA" : language === "tr" ? "tr-TR" : "en-US",
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
+                              </span>
+                            </div>
+                            {apt.location && (
+                              <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <MapPin size={14} className="mr-1" />
+                                {apt.location}
+                              </div>
+                            )}
+                            {apt.notes && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{apt.notes}</p>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-12">
+                        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">No appointments found</p>
+                        <button
+                          onClick={() => setShowAppointmentModal(true)}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-medium"
+                        >
+                          {t("bookAppointment")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Other Views Placeholder */}
-          {["appointments", "records", "notifications"].includes(activeView) && (
+          {["records", "notifications"].includes(activeView) && (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
               <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                {activeView === "appointments" && (
-                  <Calendar className="text-gray-400" size={32} />
-                )}
                 {activeView === "records" && (
                   <FileText className="text-gray-400" size={32} />
                 )}
@@ -1401,9 +1529,7 @@ export default function PatientPortalPage() {
                 )}
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {activeView === "appointments" ? t("appointments") : 
-                 activeView === "records" ? t("medicalRecords") : 
-                 t("notifications")}
+                {activeView === "records" ? t("medicalRecords") : t("notifications")}
               </h3>
               <p className="text-gray-500 dark:text-gray-400">
                 {isRTL ? "هذا القسم قيد التطوير..." : "This section is coming soon..."}
@@ -1557,12 +1683,12 @@ export default function PatientPortalPage() {
                       <div className="flex items-center space-x-4">
                         <img
                           src={selectedDoctor.image}
-                          alt={selectedDoctor.name[language]}
+                          alt={getDoctorName(selectedDoctor)}
                           className="w-12 h-12 rounded-xl object-cover"
                         />
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {selectedDoctor.name[language]}
+                            {getDoctorName(selectedDoctor)}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {selectedDate}
