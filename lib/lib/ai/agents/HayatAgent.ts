@@ -5,7 +5,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { StructuredTool } from "@langchain/core/tools";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 
@@ -27,7 +27,7 @@ const systemPromptBase = `
 - إذا احتجت إجراءً (حجز، استعلام، توصية، تصعيد لموظف) استخدم الأدوات المتاحة.
 `;
 
-const scheduleAppointmentTool = new StructuredTool({
+const scheduleAppointmentTool = new DynamicStructuredTool({
   name: "schedule_appointment",
   description:
     "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.",
@@ -41,7 +41,7 @@ const scheduleAppointmentTool = new StructuredTool({
   },
 });
 
-const getPatientInfoTool = new StructuredTool({
+const getPatientInfoTool = new DynamicStructuredTool({
   name: "get_patient_info",
   description:
     "جلب بيانات المريض الأساسية أو تاريخ زياراته قبل الرد بتفاصيل شخصية.",
@@ -54,7 +54,7 @@ const getPatientInfoTool = new StructuredTool({
   },
 });
 
-const recommendTreatmentTool = new StructuredTool({
+const recommendTreatmentTool = new DynamicStructuredTool({
   name: "recommend_treatment",
   description:
     "اقتراح خيارات علاج تجميلي عامة بناءً على هدف المريض (بدون تشخيص).",
@@ -67,7 +67,7 @@ const recommendTreatmentTool = new StructuredTool({
   },
 });
 
-const escalateToHumanTool = new StructuredTool({
+const escalateToHumanTool = new DynamicStructuredTool({
   name: "escalate_to_human",
   description:
     "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.",
