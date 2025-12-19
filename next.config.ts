@@ -23,8 +23,8 @@ const nextConfig: NextConfig = {
   // Force revalidation to prevent cache issues
   experimental: {
     staleTimes: {
-      dynamic: 0,
-      static: 0,
+      dynamic: 30,
+      static: 30,
     },
   },
 };
