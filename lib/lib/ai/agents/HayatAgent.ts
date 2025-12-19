@@ -5,7 +5,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { tool } from "@langchain/core/tools";
+import { StructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 
@@ -27,7 +27,7 @@ const systemPromptBase = `
 - إذا احتجت إجراءً (حجز، استعلام، توصية، تصعيد لموظف) استخدم الأدوات المتاحة.
 `;
 
-const scheduleAppointmentTool = tool({
+const scheduleAppointmentTool = new StructuredTool({
   name: "schedule_appointment",
   description:
     "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.",
@@ -36,12 +36,12 @@ const scheduleAppointmentTool = tool({
     preferredDate: z.string().optional(),
     notes: z.string().optional(),
   }),
-  async invoke(input) {
+  async func(input) {
     return `تم إنشاء طلب حجز (تجريبي) للمريض=${input.patientId ?? "غير محدد"} في الوقت=${input.preferredDate ?? "سيتم التنسيق"} مع ملاحظة=${input.notes ?? "لا توجد"}.`;
   },
 });
 
-const getPatientInfoTool = tool({
+const getPatientInfoTool = new StructuredTool({
   name: "get_patient_info",
   description:
     "جلب بيانات المريض الأساسية أو تاريخ زياراته قبل الرد بتفاصيل شخصية.",
@@ -49,12 +49,12 @@ const getPatientInfoTool = tool({
     patientId: z.string(),
     fields: z.array(z.string()).optional(),
   }),
-  async invoke(input) {
+  async func(input) {
     return `بيانات المريض (تجريبية) patientId=${input.patientId}, fields=${input.fields?.join(", ") ?? "الكل"}.`;
   },
 });
 
-const recommendTreatmentTool = tool({
+const recommendTreatmentTool = new StructuredTool({
   name: "recommend_treatment",
   description:
     "اقتراح خيارات علاج تجميلي عامة بناءً على هدف المريض (بدون تشخيص).",
@@ -62,12 +62,12 @@ const recommendTreatmentTool = tool({
     concern: z.string(),
     preferences: z.string().optional(),
   }),
-  async invoke(input) {
+  async func(input) {
     return `توصيات عامة (تجريبية) لاحتياج: ${input.concern} مع تفضيلات: ${input.preferences ?? "لا توجد"}.`;
   },
 });
 
-const escalateToHumanTool = tool({
+const escalateToHumanTool = new StructuredTool({
   name: "escalate_to_human",
   description:
     "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.",
@@ -75,7 +75,7 @@ const escalateToHumanTool = tool({
     reason: z.string(),
     urgency: z.enum(["low", "normal", "high"]).default("normal"),
   }),
-  async invoke(input) {
+  async func(input) {
     return `تم إنشاء تذكرة تصعيد (تجريبية) بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.`;
   },
 });
