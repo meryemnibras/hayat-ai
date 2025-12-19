@@ -356,8 +356,8 @@ export default function PatientPortalPage() {
       return {
         id: apt.id,
         appointmentDate, // Keep the Date object for filtering
-        doctor: apt.provider?.fullName || doctor ? getDoctorName(doctor) : "Unknown Doctor",
-        specialty: apt.provider?.title || doctor ? getDoctorSpecialty(doctor) : "General",
+        doctor: apt.provider?.fullName || (doctor ? getDoctorName(doctor) : "Unknown Doctor"),
+        specialty: apt.provider?.title || (doctor ? getDoctorSpecialty(doctor) : "General"),
         date: appointmentDate.toLocaleDateString(
           language === "ar" ? "ar-SA" : language === "tr" ? "tr-TR" : "en-US",
           { year: "numeric", month: "short", day: "numeric" }
