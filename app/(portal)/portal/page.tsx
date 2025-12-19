@@ -495,18 +495,18 @@ export default function PatientPortalPage() {
       const response = await fetch("/api/portal/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          doctorId: selectedDoctor.id,
-          doctorName: selectedDoctor.name[language],
-          specialty: selectedDoctor.specialty[language],
-          date: selectedDate,
-          time: selectedTime,
+                body: JSON.stringify({
+                  doctorId: selectedDoctor.id,
+                  doctorName: getDoctorName(selectedDoctor),
+                  specialty: getDoctorSpecialty(selectedDoctor),
+                  date: selectedDate,
+                  time: selectedTime,
         }),
       });
 
       if (response.ok) {
         alert(
-          `✅ Appointment booked!\nDoctor: ${selectedDoctor.name[language]}\nDate: ${selectedDate}\nTime: ${selectedTime}`
+          `✅ Appointment booked!\nDoctor: ${getDoctorName(selectedDoctor)}\nDate: ${selectedDate}\nTime: ${selectedTime}`
         );
         resetAppointmentModal();
       }
