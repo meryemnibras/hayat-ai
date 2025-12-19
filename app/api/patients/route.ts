@@ -59,10 +59,57 @@ export async function GET(request: NextRequest) {
       })),
       count: patients.length,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching patients:", error);
+    
+    // Check if it's a Prisma error about missing table
+    if (error?.code === "P2021" || error?.message?.includes("does not exist") || error?.message?.includes("Unknown model")) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Patient table does not exist. Please run migrations first.",
+          solution: "Run: npx prisma migrate dev --name add_doctor_patient_models",
+          details: error.message,
+          code: error.code
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Check if it's a connection error
+    if (error?.code === "P1001" || error?.message?.includes("Can't reach database") || error?.message?.includes("connection")) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Cannot connect to database. Please check DATABASE_URL in .env file",
+          solution: "Verify DATABASE_URL is set correctly in .env file",
+          details: error.message,
+          code: error.code
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Check if Prisma Client is not generated
+    if (error?.message?.includes("prisma.patient") || error?.message?.includes("Unknown model")) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Prisma Client is not up to date. Please regenerate it.",
+          solution: "Run: npx prisma generate",
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { success: false, error: "Failed to fetch patients" },
+      { 
+        success: false, 
+        error: "Failed to fetch patients",
+        details: error?.message || String(error),
+        code: error?.code || "UNKNOWN"
+      },
       { status: 500 }
     );
   }
@@ -134,4 +181,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
