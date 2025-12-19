@@ -1465,7 +1465,7 @@ export default function PatientPortalPage() {
                       <div className="flex items-center space-x-4">
                         <img
                           src={doctor.image}
-                          alt={doctor.name[language]}
+                          alt={getDoctorName(doctor)}
                           className="w-16 h-16 rounded-xl object-cover"
                         />
                         <div className="flex-1">
@@ -1473,7 +1473,7 @@ export default function PatientPortalPage() {
                             {getDoctorName(doctor)}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {doctor.specialty[language]}
+                            {getDoctorSpecialty(doctor)}
                           </p>
                           <div className="flex items-center mt-1 space-x-3">
                             <span className="flex items-center text-sm">
