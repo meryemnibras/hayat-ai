@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const clinicId = searchParams.get("clinicId");
     const patientId = searchParams.get("patientId");
     const providerId = searchParams.get("providerId");
+    const doctorId = searchParams.get("doctorId");
     const status = searchParams.get("status");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -21,6 +22,9 @@ export async function GET(request: NextRequest) {
     }
     if (providerId) {
       where.providerId = providerId;
+    }
+    if (doctorId) {
+      where.doctorId = doctorId;
     }
     if (status) {
       where.status = status;
@@ -54,6 +58,15 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        doctor: {
+          select: {
+            id: true,
+            fullName: true,
+            specialization: true,
+            email: true,
+            phoneNumber: true,
+          },
+        },
         clinic: {
           select: {
             id: true,
@@ -78,6 +91,8 @@ export async function GET(request: NextRequest) {
         patient: appointment.patient,
         providerId: appointment.providerId,
         provider: appointment.provider,
+        doctorId: appointment.doctorId,
+        doctor: appointment.doctor,
         status: appointment.status,
         source: appointment.source,
         title: appointment.title,
@@ -141,6 +156,7 @@ export async function POST(request: NextRequest) {
       clinicId,
       patientId,
       providerId,
+      doctorId,
       status,
       source,
       title,
@@ -162,6 +178,7 @@ export async function POST(request: NextRequest) {
         clinicId,
         patientId,
         providerId,
+        doctorId,
         status: status || "SCHEDULED",
         source: source || "WEB",
         title,
@@ -184,6 +201,15 @@ export async function POST(request: NextRequest) {
             id: true,
             fullName: true,
             title: true,
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            fullName: true,
+            specialization: true,
+            email: true,
+            phoneNumber: true,
           },
         },
         clinic: {

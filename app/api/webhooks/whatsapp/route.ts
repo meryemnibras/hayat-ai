@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { validateRequest } from "twilio";
 import { getHayatAgent } from "@/lib/ai/agents/HayatAgent";
 import { sendWhatsAppMessage } from "@/lib/whatsapp/client";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 type WebhookPayload = {
   rawBody: string;

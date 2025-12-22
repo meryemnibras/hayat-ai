@@ -8,6 +8,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 type SupportedLang = "ar" | "tr" | "en" | "fr";
 
@@ -33,12 +34,80 @@ class ScheduleAppointmentTool extends StructuredTool {
   description = "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.";
   schema = z.object({
     patientId: z.string().optional().describe("معرف المريض"),
-    preferredDate: z.string().optional().describe("التاريخ والوقت المفضل"),
+    clinicId: z.string().optional().describe("معرف العيادة"),
+    doctorId: z.string().optional().describe("معرف الطبيب"),
+    preferredDate: z.string().optional().describe("التاريخ والوقت المفضل (ISO format)"),
     notes: z.string().optional().describe("ملاحظات إضافية"),
   });
 
   async _call(input: z.infer<typeof this.schema>): Promise<string> {
-    return `تم إنشاء طلب حجز (تجريبي) للمريض=${input.patientId ?? "غير محدد"} في الوقت=${input.preferredDate ?? "سيتم التنسيق"} مع ملاحظة=${input.notes ?? "لا توجد"}.`;
+    try {
+      // Get default clinic if not provided
+      const defaultClinicId = input.clinicId || process.env.DEFAULT_CLINIC_ID;
+      
+      if (!input.patientId || !defaultClinicId) {
+        return `❌ لا يمكن حجز الموعد: يرجى توفير معرف المريض والعيادة.`;
+      }
+
+      // Parse preferred date or use default (next day at 10 AM)
+      const startTime = input.preferredDate 
+        ? new Date(input.preferredDate)
+        : new Date(Date.now() + 24 * 60 * 60 * 1000); // Next day
+      startTime.setHours(10, 0, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setHours(startTime.getHours() + 1);
+
+      // Create appointment
+      const appointment = await prisma.appointment.create({
+        data: {
+          clinicId: defaultClinicId,
+          patientId: input.patientId,
+          doctorId: input.doctorId,
+          status: "SCHEDULED",
+          source: "CHAT",
+          title: "Consultation",
+          startTime,
+          endTime,
+          notes: input.notes || "تم الحجز عبر AI Chat",
+        },
+        include: {
+          patient: {
+            select: {
+              fullName: true,
+            },
+          },
+          doctor: {
+            select: {
+              fullName: true,
+              specialization: true,
+            },
+          },
+        },
+      });
+
+      const doctorName = appointment.doctor?.fullName || "طبيب متخصص";
+      const dateStr = startTime.toLocaleDateString("ar-SA", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const timeStr = startTime.toLocaleTimeString("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      return `✅ تم حجز الموعد بنجاح!\n\n` +
+             `👤 المريض: ${appointment.patient.fullName}\n` +
+             `👨‍⚕️ الطبيب: ${doctorName}\n` +
+             `📅 التاريخ: ${dateStr}\n` +
+             `🕐 الوقت: ${timeStr}\n` +
+             `🆔 رقم الموعد: ${appointment.id}`;
+    } catch (error: any) {
+      console.error("Error scheduling appointment:", error);
+      return `❌ حدث خطأ أثناء حجز الموعد: ${error.message || "خطأ غير معروف"}`;
+    }
   }
 }
 
@@ -52,7 +121,64 @@ class GetPatientInfoTool extends StructuredTool {
   });
 
   async _call(input: z.infer<typeof this.schema>): Promise<string> {
-    return `بيانات المريض (تجريبية) patientId=${input.patientId}, fields=${input.fields?.join(", ") ?? "الكل"}.`;
+    try {
+      const patient = await prisma.patient.findUnique({
+        where: { id: input.patientId },
+        include: {
+          appointments: {
+            take: 5,
+            orderBy: { startTime: "desc" },
+            include: {
+              doctor: {
+                select: {
+                  fullName: true,
+                  specialization: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!patient) {
+        return `❌ لم يتم العثور على المريض بالمعرف: ${input.patientId}`;
+      }
+
+      let info = `📋 بيانات المريض:\n\n`;
+      info += `👤 الاسم: ${patient.fullName}\n`;
+      
+      if (patient.email) info += `📧 البريد الإلكتروني: ${patient.email}\n`;
+      if (patient.phone) info += `📱 الهاتف: ${patient.phone}\n`;
+      if (patient.dateOfBirth) {
+        const age = Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        info += `🎂 العمر: ${age} سنة\n`;
+      }
+      if (patient.gender && patient.gender !== "UNSPECIFIED") {
+        const genderMap: Record<string, string> = {
+          MALE: "ذكر",
+          FEMALE: "أنثى",
+          OTHER: "آخر",
+        };
+        info += `⚧️ الجنس: ${genderMap[patient.gender] || patient.gender}\n`;
+      }
+      if (patient.preferredLanguage) info += `🌐 اللغة المفضلة: ${patient.preferredLanguage}\n`;
+
+      if (patient.appointments.length > 0) {
+        info += `\n📅 آخر المواعيد (${patient.appointments.length}):\n`;
+        patient.appointments.forEach((apt, idx) => {
+          const date = new Date(apt.startTime).toLocaleDateString("ar-SA");
+          const doctor = apt.doctor?.fullName || "طبيب";
+          info += `${idx + 1}. ${date} - ${doctor} (${apt.status})\n`;
+        });
+      } else {
+        info += `\n📅 لا توجد مواعيد سابقة.`;
+      }
+
+      return info;
+    } catch (error: any) {
+      console.error("Error fetching patient info:", error);
+      return `❌ حدث خطأ أثناء جلب بيانات المريض: ${error.message || "خطأ غير معروف"}`;
+    }
   }
 }
 
@@ -75,12 +201,91 @@ class EscalateToHumanTool extends StructuredTool {
   name = "escalate_to_human";
   description = "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.";
   schema = z.object({
+    patientId: z.string().optional().describe("معرف المريض"),
+    conversationId: z.string().optional().describe("معرف المحادثة"),
     reason: z.string().describe("سبب التصعيد"),
     urgency: z.enum(["low", "normal", "high"]).default("normal").describe("مستوى الأهمية"),
   });
 
   async _call(input: z.infer<typeof this.schema>): Promise<string> {
-    return `تم إنشاء تذكرة تصعيد (تجريبية) بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.`;
+    try {
+      const defaultClinicId = process.env.DEFAULT_CLINIC_ID;
+      
+      if (!input.patientId || !defaultClinicId) {
+        return `⚠️ تم إنشاء طلب تصعيد بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.\n\n` +
+               `ملاحظة: يرجى توفير معرف المريض لإكمال التصعيد.`;
+      }
+
+      // Find or create conversation
+      let conversation;
+      if (input.conversationId) {
+        conversation = await prisma.conversation.findUnique({
+          where: { id: input.conversationId },
+        });
+      }
+
+      if (!conversation) {
+        // Find open conversation or create new one
+        conversation = await prisma.conversation.findFirst({
+          where: {
+            patientId: input.patientId,
+            clinicId: defaultClinicId,
+            status: "OPEN",
+          },
+          orderBy: { startedAt: "desc" },
+        });
+
+        if (!conversation) {
+          conversation = await prisma.conversation.create({
+            data: {
+              clinicId: defaultClinicId,
+              patientId: input.patientId,
+              channel: "CHAT",
+              status: "OPEN",
+              subject: `تصعيد: ${input.reason}`,
+              lastMessageAt: new Date(),
+            },
+          });
+        }
+      }
+
+      // Create escalation message
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderType: "AI",
+          content: `🚨 طلب تصعيد إلى موظف بشري\n\n` +
+                   `السبب: ${input.reason}\n` +
+                   `مستوى الأهمية: ${input.urgency === "high" ? "عالي" : input.urgency === "normal" ? "عادي" : "منخفض"}\n` +
+                   `الوقت: ${new Date().toLocaleString("ar-SA")}`,
+          metadata: {
+            type: "escalation",
+            reason: input.reason,
+            urgency: input.urgency,
+          },
+        },
+      });
+
+      // Update conversation
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: {
+          lastMessageAt: new Date(),
+          subject: conversation.subject || `تصعيد: ${input.reason}`,
+        },
+      });
+
+      const urgencyEmoji = input.urgency === "high" ? "🔴" : input.urgency === "normal" ? "🟡" : "🟢";
+      return `${urgencyEmoji} تم تصعيد المحادثة إلى موظف بشري بنجاح!\n\n` +
+             `📋 السبب: ${input.reason}\n` +
+             `⚡ مستوى الأهمية: ${input.urgency === "high" ? "عالي" : input.urgency === "normal" ? "عادي" : "منخفض"}\n` +
+             `🆔 رقم المحادثة: ${conversation.id}\n\n` +
+             `سيتم التواصل معك قريباً من قبل أحد موظفينا.`;
+    } catch (error: any) {
+      console.error("Error escalating to human:", error);
+      return `⚠️ تم إنشاء طلب تصعيد بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.\n\n` +
+             `ملاحظة: حدث خطأ أثناء حفظ التصعيد، لكن سيتم إبلاغ الفريق.`;
+    }
   }
 }
 

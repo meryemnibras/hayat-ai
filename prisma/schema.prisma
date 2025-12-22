@@ -68,6 +68,7 @@ model Clinic {
   appointments  Appointment[]
   conversations Conversation[]
   subscription  Subscription?
+  doctors       Doctor[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -120,21 +121,25 @@ model Patient {
 }
 
 model Doctor {
-  id                   String   @id @default(cuid())
+  id                   String        @id @default(cuid())
+  clinicId             String?
+  clinic               Clinic?        @relation(fields: [clinicId], references: [id])
   fullName             String
   specialization       String
-  email                String   @unique
+  email                String        @unique
   phoneNumber          String
-  licenseNumber        String   @unique
+  licenseNumber        String        @unique
   yearsExperience      Int
   hospitalAffiliation  String?
   availabilitySchedule Json? // JSON format: { "monday": ["09:00-17:00"], ... }
-  languagesSpoken      String[] @default([])
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  languagesSpoken      String[]      @default([])
+  appointments         Appointment[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   @@index([specialization])
   @@index([email])
+  @@index([clinicId])
 }
 
 model Appointment {
@@ -145,6 +150,8 @@ model Appointment {
   patient    Patient           @relation(fields: [patientId], references: [id])
   providerId String?
   provider   User?             @relation("ProviderAppointments", fields: [providerId], references: [id])
+  doctorId   String?
+  doctor     Doctor?           @relation(fields: [doctorId], references: [id])
   status     AppointmentStatus @default(SCHEDULED)
   source     AppointmentSource @default(WEB)
   title      String?
@@ -158,6 +165,7 @@ model Appointment {
   @@index([clinicId, startTime])
   @@index([patientId, startTime])
   @@index([status])
+  @@index([doctorId])
 }
 
 model Conversation {
