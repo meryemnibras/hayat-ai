@@ -137,3 +137,4 @@ git push origin main
 - ✅ لا يجب أن تظهر أخطاء "Property 'doctor' does not exist"
 - ✅ Prisma Client يتم توليده تلقائياً في كل build
 
+

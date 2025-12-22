@@ -286,3 +286,4 @@ npx prisma migrate deploy
    - يجب إعادة توليده بعد أي تغيير في `schema.prisma`
    - يتم توليده تلقائياً في `postinstall` و `build`
 
+

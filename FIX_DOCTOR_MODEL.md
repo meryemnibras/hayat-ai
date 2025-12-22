@@ -143,3 +143,4 @@ npx prisma migrate deploy
    - يتم توليده في `node_modules/.prisma/client`
    - يجب إعادة توليده بعد أي تغيير في `schema.prisma`
 
+
