@@ -189,10 +189,155 @@ class RecommendTreatmentTool extends StructuredTool {
   schema = z.object({
     concern: z.string().describe("الاحتياج أو المشكلة"),
     preferences: z.string().optional().describe("تفضيلات المريض"),
+    patientId: z.string().optional().describe("معرف المريض (اختياري)"),
   });
 
   async _call(input: z.infer<typeof this.schema>): Promise<string> {
-    return `توصيات عامة (تجريبية) لاحتياج: ${input.concern} مع تفضيلات: ${input.preferences ?? "لا توجد"}.`;
+    try {
+      const defaultClinicId = process.env.DEFAULT_CLINIC_ID;
+      
+      // Map common concerns to specializations
+      const concernToSpecialization: Record<string, string[]> = {
+        "بشرة": ["Dermatology", "Cosmetic Dermatology"],
+        "جلد": ["Dermatology", "Cosmetic Dermatology"],
+        "شعر": ["Hair Transplant", "Trichology"],
+        "زراعة": ["Hair Transplant"],
+        "تجميل": ["Plastic Surgery", "Cosmetic Surgery"],
+        "جراحة": ["Plastic Surgery", "Reconstructive Surgery"],
+        "ليزر": ["Laser Treatment", "Dermatology"],
+        "حقن": ["Dermal Fillers", "Botox"],
+        "نحت": ["Body Contouring", "Liposuction"],
+        "وجه": ["Facial Rejuvenation", "Cosmetic Dermatology"],
+      };
+
+      // Find matching specializations
+      const concernLower = input.concern.toLowerCase();
+      let matchingSpecializations: string[] = [];
+      
+      for (const [key, specializations] of Object.entries(concernToSpecialization)) {
+        if (concernLower.includes(key)) {
+          matchingSpecializations.push(...specializations);
+        }
+      }
+
+      // If no match, use general cosmetic specializations
+      if (matchingSpecializations.length === 0) {
+        matchingSpecializations = ["Dermatology", "Plastic Surgery", "Hair Transplant"];
+      }
+
+      // Find doctors with matching specializations
+      const doctors = await prisma.doctor.findMany({
+        where: {
+          specialization: {
+            in: matchingSpecializations,
+          },
+        },
+        take: 5,
+        orderBy: {
+          yearsExperience: "desc",
+        },
+        select: {
+          id: true,
+          fullName: true,
+          specialization: true,
+          yearsExperience: true,
+          hospitalAffiliation: true,
+          languagesSpoken: true,
+        },
+      });
+
+      // Get patient's previous appointments if patientId is provided
+      let previousTreatments: string[] = [];
+      if (input.patientId && defaultClinicId) {
+        const patientAppointments = await prisma.appointment.findMany({
+          where: {
+            patientId: input.patientId,
+            clinicId: defaultClinicId,
+            status: {
+              in: ["COMPLETED", "CONFIRMED"],
+            },
+          },
+          include: {
+            doctor: {
+              select: {
+                specialization: true,
+              },
+            },
+          },
+          take: 10,
+          orderBy: {
+            startTime: "desc",
+          },
+        });
+
+        previousTreatments = patientAppointments
+          .map((apt) => apt.doctor?.specialization || apt.title)
+          .filter((t): t is string => !!t && !previousTreatments.includes(t));
+      }
+
+      // Build recommendation response
+      let recommendation = `💡 توصيات علاجية لاحتياجك: "${input.concern}"\n\n`;
+
+      if (input.preferences) {
+        recommendation += `📝 تفضيلاتك: ${input.preferences}\n\n`;
+      }
+
+      if (doctors.length > 0) {
+        recommendation += `👨‍⚕️ الأطباء المتخصصون المتاحون:\n\n`;
+        doctors.forEach((doctor, idx) => {
+          recommendation += `${idx + 1}. د. ${doctor.fullName}\n`;
+          recommendation += `   📌 التخصص: ${doctor.specialization}\n`;
+          recommendation += `   ⭐ الخبرة: ${doctor.yearsExperience} سنة\n`;
+          if (doctor.hospitalAffiliation) {
+            recommendation += `   🏥 التابع ل: ${doctor.hospitalAffiliation}\n`;
+          }
+          if (doctor.languagesSpoken.length > 0) {
+            recommendation += `   🌐 اللغات: ${doctor.languagesSpoken.join(", ")}\n`;
+          }
+          recommendation += `\n`;
+        });
+      } else {
+        recommendation += `ℹ️ لا توجد أطباء متخصصون متاحون حالياً في هذا المجال.\n`;
+        recommendation += `نوصي بالتواصل معنا للحصول على استشارة مخصصة.\n\n`;
+      }
+
+      if (previousTreatments.length > 0) {
+        recommendation += `📋 العلاجات السابقة التي قمت بها:\n`;
+        previousTreatments.forEach((treatment, idx) => {
+          recommendation += `${idx + 1}. ${treatment}\n`;
+        });
+        recommendation += `\n`;
+      }
+
+      // Add general recommendations based on concern
+      recommendation += `💬 نصائح عامة:\n`;
+      if (concernLower.includes("بشرة") || concernLower.includes("جلد")) {
+        recommendation += `• نوصي بزيارة طبيب الأمراض الجلدية للفحص الأولي\n`;
+        recommendation += `• يمكن مناقشة خيارات العلاج مثل الليزر، الحقن، أو العلاجات الموضعية\n`;
+      } else if (concernLower.includes("شعر") || concernLower.includes("زراعة")) {
+        recommendation += `• زراعة الشعر تتطلب استشارة أولية لتقييم الحالة\n`;
+        recommendation += `• يمكن مناقشة تقنيات FUE أو FUT حسب حالتك\n`;
+      } else if (concernLower.includes("تجميل") || concernLower.includes("جراحة")) {
+        recommendation += `• الجراحة التجميلية تتطلب استشارة شاملة مع جراح متخصص\n`;
+        recommendation += `• يمكن مناقشة الإجراءات الجراحية وغير الجراحية\n`;
+      } else {
+        recommendation += `• نوصي بحجز استشارة مع أحد أطبائنا المتخصصين\n`;
+        recommendation += `• سيتم تقييم حالتك وتقديم خطة علاجية مخصصة\n`;
+      }
+
+      recommendation += `\n📞 للاستفسار أو الحجز، يمكنك:\n`;
+      recommendation += `• حجز موعد مباشرة من خلال البوابة\n`;
+      recommendation += `• التواصل معنا عبر WhatsApp\n`;
+      recommendation += `• الاتصال بنا على رقم العيادة\n`;
+
+      return recommendation;
+    } catch (error: any) {
+      console.error("Error recommending treatment:", error);
+      // Fallback to basic recommendation
+      return `💡 توصيات عامة لاحتياجك: "${input.concern}"\n\n` +
+             `نوصي بحجز استشارة مع أحد أطبائنا المتخصصين لتقييم حالتك وتقديم خطة علاجية مخصصة.\n\n` +
+             `يمكنك حجز موعد مباشرة من خلال البوابة أو التواصل معنا.`;
+    }
   }
 }
 
