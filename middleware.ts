@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { authMiddleware } from "@clerk/nextjs";
 
-export function middleware(request: NextRequest) {
+// Domain-based routing function
+function handleDomainRouting(request: NextRequest): NextResponse | null {
   const hostname = request.headers.get("host") || "";
   const url = request.nextUrl.clone();
 
@@ -16,7 +18,7 @@ export function middleware(request: NextRequest) {
   if (host === "portal.mediai.tr" || host === "www.portal.mediai.tr") {
     // Skip if already API or static files
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/_next")) {
-      return NextResponse.next();
+      return null; // Let Clerk handle it
     }
     
     // Block access to non-portal routes - redirect to portal
@@ -43,14 +45,14 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
     
-    return NextResponse.next();
+    return null; // Let Clerk handle it
   }
 
   // app.mediai.tr → /dashboard/*
   if (host === "app.mediai.tr" || host === "www.app.mediai.tr") {
     // Skip if already API or static files
     if (url.pathname.startsWith("/api") || url.pathname.startsWith("/_next")) {
-      return NextResponse.next();
+      return null; // Let Clerk handle it
     }
     
     // Block access to non-dashboard routes - redirect to dashboard
@@ -71,7 +73,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(url);
     }
     
-    return NextResponse.next();
+    return null; // Let Clerk handle it
   }
 
   // mediai.tr → landing page only
@@ -84,11 +86,38 @@ export function middleware(request: NextRequest) {
     
     // Allow /portal/* and /pricing/* on main domain
     // Everything else (including /) goes to landing page (handled by app/page.tsx)
-    return NextResponse.next();
+    return null; // Let Clerk handle it
   }
 
-  return NextResponse.next();
+  return null; // Let Clerk handle it
 }
+
+// Combine Clerk auth with domain routing
+export default authMiddleware({
+  publicRoutes: [
+    "/",
+    "/pricing",
+    "/portal",
+    "/portal/login",
+    "/portal/register",
+    "/portal/register-simple",
+    "/api/health",
+    "/api/portal/doctors",
+    "/api/portal/appointments",
+  ],
+  ignoredRoutes: [
+    "/api/webhooks/(.*)",
+  ],
+  beforeAuth: (req) => {
+    // Handle domain routing first
+    const domainResponse = handleDomainRouting(req);
+    if (domainResponse) {
+      return domainResponse;
+    }
+    // Continue with Clerk auth
+    return undefined;
+  },
+});
 
 export const config = {
   matcher: [
@@ -103,4 +132,3 @@ export const config = {
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|jpeg)$).*)",
   ],
 };
-
