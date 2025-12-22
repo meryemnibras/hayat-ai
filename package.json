@@ -8,7 +8,15 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "check-env": "tsx scripts/check-env.ts"
+    "check-env": "tsx scripts/check-env.ts",
+    "db:validate": "prisma validate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset",
+    "db:status": "prisma migrate status"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

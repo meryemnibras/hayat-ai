@@ -6,7 +6,7 @@
 
 const requiredVars = {
   // Critical
-  DATABASE_URL: "PostgreSQL database connection string",
+  DATABASE_URL: "PostgreSQL database connection string (REQUIRED)",
   DEFAULT_CLINIC_ID: "Default clinic ID for the application",
   
   // Clerk (optional but recommended)
@@ -50,6 +50,11 @@ function checkEnv() {
         console.log(`  ⚠️  ${key}: Not set (optional but recommended)`);
         console.log(`     Description: ${description}`);
         hasWarnings = true;
+      } else if (key === "DATABASE_URL") {
+        console.log(`  ❌ ${key}: Missing! (CRITICAL)`);
+        console.log(`     Description: ${description}`);
+        console.log(`     💡 Run: npm run db:migrate after setting DATABASE_URL`);
+        hasErrors = true;
       } else {
         console.log(`  ❌ ${key}: Missing!`);
         console.log(`     Description: ${description}`);
