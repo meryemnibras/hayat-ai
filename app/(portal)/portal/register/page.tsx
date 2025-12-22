@@ -87,7 +87,6 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,14 +98,23 @@ export default function RegisterPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        // Redirect to login or dashboard
-        router.push("/portal/login?registered=true");
+        // Show success message
+        if (data.message) {
+          // Redirect to login with success message
+          router.push("/portal/login?registered=true&message=" + encodeURIComponent(data.message));
+        } else {
+          router.push("/portal/login?registered=true");
+        }
       } else {
-        const data = await response.json();
-        setErrors({ submit: data.error || (isRTL ? "حدث خطأ أثناء التسجيل" : "Registration failed") });
+        setErrors({ 
+          submit: data.error || (isRTL ? "حدث خطأ أثناء التسجيل" : "Registration failed") 
+        });
       }
     } catch (error) {
+      console.error("Registration error:", error);
       setErrors({
         submit: isRTL
           ? "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى"

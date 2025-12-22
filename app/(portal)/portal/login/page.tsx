@@ -69,7 +69,6 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,21 +79,25 @@ function LoginForm() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        // Store token if provided
+        // Store user data if provided
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
         if (data.token) {
           localStorage.setItem("auth_token", data.token);
         }
         // Redirect to portal dashboard
         router.push("/portal");
       } else {
-        const data = await response.json();
         setErrors({
           submit: data.error || (isRTL ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password"),
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       setErrors({
         submit: isRTL
           ? "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى"
