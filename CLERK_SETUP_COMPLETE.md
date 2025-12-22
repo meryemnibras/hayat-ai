@@ -57,6 +57,8 @@ CLERK_SECRET_KEY=sk_test_...
 npm run check-env
 ```
 
+**الدليل التفصيلي:** راجع `CLERK_KEYS_SETUP.md` للخطوات التفصيلية
+
 ---
 
 ## ✅ بعد الإعداد
