@@ -81,14 +81,16 @@ function checkEnv() {
   if (hasErrors) {
     console.log("❌ Some required environment variables are missing!");
     console.log("   Please check .env.local or Vercel Environment Variables");
+    console.log("   📚 See ENV_SETUP_COMPLETE.md for setup instructions");
     process.exit(1);
   } else if (hasWarnings) {
     console.log("⚠️  Some recommended environment variables are missing.");
     console.log("   The app will work but some features may be limited.");
-    console.log("   Check CLERK_SETUP_GUIDE.md for setup instructions.");
+    console.log("   📚 See ENV_SETUP_COMPLETE.md for setup instructions");
     process.exit(0);
   } else {
     console.log("✅ All required environment variables are set!");
+    console.log("   🎉 Your environment is properly configured!");
     process.exit(0);
   }
 }
