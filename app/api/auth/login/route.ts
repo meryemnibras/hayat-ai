@@ -25,7 +25,7 @@ export async function POST(req: Request) {
           token: "mock_token_" + Date.now(),
           user: {
             email,
-            fullName: "Mock User",
+            name: "Mock User",
           },
         },
         { status: 200 }
@@ -34,7 +34,8 @@ export async function POST(req: Request) {
 
     try {
       // Try to find user in Clerk by email
-      const clerkUsers = await clerkClient.users.getUserList({
+      const clerkClientInstance = await clerkClient();
+      const clerkUsers = await clerkClientInstance.users.getUserList({
         emailAddress: [email],
         limit: 1,
       });
@@ -50,17 +51,15 @@ export async function POST(req: Request) {
 
       // Find or create user in database
       const dbUser = await prisma.user.upsert({
-        where: { clerkId: clerkUser.id },
+        where: { email: clerkUser.emailAddresses[0]?.emailAddress || email },
         update: {
           email: clerkUser.emailAddresses[0]?.emailAddress || email,
-          fullName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || email,
+          name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || email,
         },
         create: {
-          clerkId: clerkUser.id,
           email: clerkUser.emailAddresses[0]?.emailAddress || email,
-          fullName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || email,
-          clinicId: process.env.DEFAULT_CLINIC_ID || "",
-          role: "STAFF",
+          name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || email,
+          role: "PATIENT",
         },
       });
 
@@ -69,7 +68,7 @@ export async function POST(req: Request) {
         user: {
           id: dbUser.id,
           email: dbUser.email,
-          fullName: dbUser.fullName,
+          name: dbUser.name,
           role: dbUser.role,
         },
       });
@@ -89,7 +88,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
-
-

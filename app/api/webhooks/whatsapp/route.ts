@@ -79,70 +79,59 @@ async function handleMessage(payload: WebhookPayload) {
     return;
   }
 
-  const clinicId = process.env.WHATSAPP_DEFAULT_CLINIC_ID;
-  if (!clinicId) {
-    throw new Error("WHATSAPP_DEFAULT_CLINIC_ID is required to save messages");
-  }
-
-  const patient =
-    (await prisma.patient.findFirst({
-      where: { clinicId, phone: waId },
+  // Find or create user by phone number
+  let user =
+    (await prisma.user.findFirst({
+      where: { phone: waId },
     })) ??
-    (await prisma.patient.create({
+    (await prisma.user.create({
       data: {
-        clinicId,
         phone: waId,
-        fullName: `WhatsApp User ${waId}`,
+        name: `WhatsApp User ${waId}`,
+        role: "PATIENT",
       },
     }));
 
+  // Find or create conversation
   let conversation =
     (await prisma.conversation.findFirst({
       where: {
-        patientId: patient.id,
-        channel: "WHATSAPP",
-        status: "OPEN",
+        userId: user.id,
       },
-      orderBy: { startedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     })) ??
     (await prisma.conversation.create({
       data: {
-        clinicId,
-        patientId: patient.id,
-        channel: "WHATSAPP",
-        status: "OPEN",
-        subject: "WhatsApp conversation",
-        lastMessageAt: new Date(),
+        userId: user.id,
       },
     }));
 
+  // Save user message
   await prisma.message.create({
     data: {
       conversationId: conversation.id,
-      senderType: "PATIENT",
-      senderId: patient.id,
+      role: "USER",
       content: body,
-      metadata: { from, waId },
     },
   });
 
+  // Get AI response
   const agent = getHayatAgent();
-  const aiResult = await agent.chat({ message: body, patientId: patient.id });
+  const aiResult = await agent.chat({ 
+    message: body, 
+    patientId: user.id,
+  });
 
+  // Save AI message
   await prisma.message.create({
     data: {
       conversationId: conversation.id,
-      senderType: "AI",
+      role: "ASSISTANT",
       content: aiResult.reply as string,
-      metadata: { language: aiResult.language, toolCalls: aiResult.toolCalls },
     },
   });
 
-  await prisma.conversation.update({
-    where: { id: conversation.id },
-    data: { lastMessageAt: new Date() },
-  });
-
+  // Send WhatsApp response
   await sendWhatsAppMessage(from, aiResult.reply as string);
 }
 
@@ -161,6 +150,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Webhook failed" }, { status: 500 });
   }
 }
-
-
-

@@ -27,55 +27,63 @@ const systemPromptBase = `
 - إذا احتجت إجراءً (حجز، استعلام، توصية، تصعيد لموظف) استخدم الأدوات المتاحة.
 `;
 
+const scheduleAppointmentSchema = z.object({
+  patientId: z.string().optional(),
+  preferredDate: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 const scheduleAppointmentTool = new DynamicStructuredTool({
   name: "schedule_appointment",
   description:
     "جدولة موعد للمريض. استخدمها عندما يطلب حجزاً أو تغيير موعد.",
-  schema: z.object({
-    patientId: z.string().optional(),
-    preferredDate: z.string().optional(),
-    notes: z.string().optional(),
-  }),
-  async func(input) {
+  schema: scheduleAppointmentSchema,
+  async func(input: z.infer<typeof scheduleAppointmentSchema>) {
     return `تم إنشاء طلب حجز (تجريبي) للمريض=${input.patientId ?? "غير محدد"} في الوقت=${input.preferredDate ?? "سيتم التنسيق"} مع ملاحظة=${input.notes ?? "لا توجد"}.`;
   },
+});
+
+const getPatientInfoSchema = z.object({
+  patientId: z.string(),
+  fields: z.array(z.string()).optional(),
 });
 
 const getPatientInfoTool = new DynamicStructuredTool({
   name: "get_patient_info",
   description:
     "جلب بيانات المريض الأساسية أو تاريخ زياراته قبل الرد بتفاصيل شخصية.",
-  schema: z.object({
-    patientId: z.string(),
-    fields: z.array(z.string()).optional(),
-  }),
-  async func(input) {
+  schema: getPatientInfoSchema,
+  async func(input: z.infer<typeof getPatientInfoSchema>) {
     return `بيانات المريض (تجريبية) patientId=${input.patientId}, fields=${input.fields?.join(", ") ?? "الكل"}.`;
   },
+});
+
+const recommendTreatmentSchema = z.object({
+  concern: z.string(),
+  preferences: z.string().optional(),
 });
 
 const recommendTreatmentTool = new DynamicStructuredTool({
   name: "recommend_treatment",
   description:
     "اقتراح خيارات علاج تجميلي عامة بناءً على هدف المريض (بدون تشخيص).",
-  schema: z.object({
-    concern: z.string(),
-    preferences: z.string().optional(),
-  }),
-  async func(input) {
+  schema: recommendTreatmentSchema,
+  async func(input: z.infer<typeof recommendTreatmentSchema>) {
     return `توصيات عامة (تجريبية) لاحتياج: ${input.concern} مع تفضيلات: ${input.preferences ?? "لا توجد"}.`;
   },
+});
+
+const escalateToHumanSchema = z.object({
+  reason: z.string(),
+  urgency: z.enum(["low", "normal", "high"]).default("normal"),
 });
 
 const escalateToHumanTool = new DynamicStructuredTool({
   name: "escalate_to_human",
   description:
     "تصعيد المحادثة إلى موظف بشري عندما يطلب المريض ذلك أو عند الحاجة الطبية.",
-  schema: z.object({
-    reason: z.string(),
-    urgency: z.enum(["low", "normal", "high"]).default("normal"),
-  }),
-  async func(input) {
+  schema: escalateToHumanSchema,
+  async func(input: z.infer<typeof escalateToHumanSchema>) {
     return `تم إنشاء تذكرة تصعيد (تجريبية) بسبب: ${input.reason}. مستوى الأهمية: ${input.urgency}.`;
   },
 });
@@ -137,8 +145,8 @@ export class HayatAgent {
       const result = await toolImpl.invoke(call.args);
       toolResults.push(
         new ToolMessage({
-          tool_call_id: call.id,
-          content: result,
+          tool_call_id: call.id || "",
+          content: typeof result === "string" ? result : String(result),
         }),
       );
     }

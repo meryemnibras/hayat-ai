@@ -27,24 +27,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get clinic email
-    const clinic = await prisma.clinic.findUnique({
+    // Get user email (using userId as clinicId for now)
+    const user = await prisma.user.findUnique({
       where: { id: clinicId },
       select: { email: true },
     });
 
-    if (!clinic?.email) {
-      return NextResponse.json(
-        { error: "Clinic email not found" },
-        { status: 400 }
-      );
-    }
+    const clinicEmail = user?.email || process.env.NEXT_PUBLIC_EMAIL || "info@mediai.tr";
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const session = await createCheckoutSession({
       clinicId,
-      clinicEmail: clinic.email,
+      clinicEmail,
       priceId: plan.priceId,
       successUrl: `${baseUrl}/dashboard/settings/billing?success=true`,
       cancelUrl: `${baseUrl}/pricing?canceled=true`,

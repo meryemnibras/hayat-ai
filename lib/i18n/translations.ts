@@ -142,3 +142,19 @@ export function t(key: TranslationKey, lang: SupportedLanguage = "ar"): string {
   return translations[lang]?.[key] || key;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

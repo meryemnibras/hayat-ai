@@ -144,3 +144,19 @@ npx prisma migrate deploy
    - يجب إعادة توليده بعد أي تغيير في `schema.prisma`
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

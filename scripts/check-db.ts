@@ -21,14 +21,13 @@ async function checkDatabase() {
     console.log("2️⃣ Checking database tables...");
     
     const tables = {
-      Clinic: await prisma.clinic.count().catch(() => null),
       User: await prisma.user.count().catch(() => null),
-      Patient: await prisma.patient.count().catch(() => null),
-      Doctor: await prisma.doctor.count().catch(() => null),
+      Account: await prisma.account.count().catch(() => null),
+      Session: await prisma.session.count().catch(() => null),
+      VerificationToken: await prisma.verificationToken.count().catch(() => null),
       Appointment: await prisma.appointment.count().catch(() => null),
       Conversation: await prisma.conversation.count().catch(() => null),
       Message: await prisma.message.count().catch(() => null),
-      Subscription: await prisma.subscription.count().catch(() => null),
     };
 
     let allTablesExist = true;
@@ -51,11 +50,10 @@ async function checkDatabase() {
     
     // Test a relationship query
     try {
-      const clinicWithRelations = await prisma.clinic.findFirst({
+      const userWithRelations = await prisma.user.findFirst({
         include: {
-          doctors: true,
-          patients: true,
           appointments: true,
+          conversations: true,
         },
       });
       console.log("   ✅ Relationships working correctly");
@@ -68,7 +66,7 @@ async function checkDatabase() {
     
     try {
       await prisma.appointment.findMany({
-        where: { status: "SCHEDULED" },
+        where: { status: "PENDING" },
         take: 1,
       });
       console.log("   ✅ Queries working correctly");
@@ -102,4 +100,20 @@ async function checkDatabase() {
 }
 
 checkDatabase();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

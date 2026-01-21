@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/notifications - Get notifications for a user/clinic
+// GET /api/notifications - Get notifications for a user
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
     const userId = searchParams.get("userId");
     const unreadOnly = searchParams.get("unreadOnly") === "true";
     const limit = parseInt(searchParams.get("limit") || "50");
 
-    if (!clinicId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "clinicId is required" },
+        { error: "userId is required" },
         { status: 400 }
       );
     }
@@ -32,20 +31,16 @@ export async function GET(request: NextRequest) {
     // Get recent appointments
     const recentAppointments = await prisma.appointment.findMany({
       where: {
-        clinicId,
+        userId,
         createdAt: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
         },
       },
       include: {
-        patient: {
+        user: {
           select: {
-            fullName: true,
-          },
-        },
-        doctor: {
-          select: {
-            fullName: true,
+            name: true,
+            email: true,
           },
         },
       },
@@ -60,10 +55,10 @@ export async function GET(request: NextRequest) {
         id: `appointment-${apt.id}`,
         type: "appointment",
         title: "New Appointment",
-        message: `${apt.patient.fullName} has a ${apt.status.toLowerCase()} appointment${apt.doctor ? ` with ${apt.doctor.fullName}` : ""}`,
+        message: `${apt.user.name || "User"} has a ${apt.status.toLowerCase()} appointment for ${apt.treatment} with ${apt.doctorName}`,
         read: false,
         createdAt: apt.createdAt,
-        link: `/dashboard/appointments/${apt.id}`,
+        link: `/appointments/${apt.id}`,
       });
     });
 
@@ -71,9 +66,9 @@ export async function GET(request: NextRequest) {
     const recentMessages = await prisma.message.findMany({
       where: {
         conversation: {
-          clinicId,
+          userId,
         },
-        senderType: "PATIENT",
+        role: "USER",
         createdAt: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         },
@@ -81,9 +76,9 @@ export async function GET(request: NextRequest) {
       include: {
         conversation: {
           include: {
-            patient: {
+            user: {
               select: {
-                fullName: true,
+                name: true,
               },
             },
           },
@@ -100,10 +95,10 @@ export async function GET(request: NextRequest) {
         id: `message-${msg.id}`,
         type: "message",
         title: "New Message",
-        message: `New message from ${msg.conversation.patient.fullName}`,
+        message: `New message in conversation`,
         read: false,
         createdAt: msg.createdAt,
-        link: `/dashboard/conversations/${msg.conversationId}`,
+        link: `/conversations/${msg.conversationId}`,
       });
     });
 
@@ -144,4 +139,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

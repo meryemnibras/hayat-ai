@@ -50,3 +50,19 @@ tsx scripts/check-db.ts
 
 **الدليل الكامل:** راجع `MIGRATION_INSTRUCTIONS.md`
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

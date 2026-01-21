@@ -5,79 +5,42 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
-    const patientId = searchParams.get("patientId");
-    const providerId = searchParams.get("providerId");
-    const doctorId = searchParams.get("doctorId");
+    const userId = searchParams.get("userId");
     const status = searchParams.get("status");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
     const where: any = {};
-    if (clinicId) {
-      where.clinicId = clinicId;
-    }
-    if (patientId) {
-      where.patientId = patientId;
-    }
-    if (providerId) {
-      where.providerId = providerId;
-    }
-    if (doctorId) {
-      where.doctorId = doctorId;
+    if (userId) {
+      where.userId = userId;
     }
     if (status) {
       where.status = status;
     }
     if (startDate || endDate) {
-      where.startTime = {};
+      where.date = {};
       if (startDate) {
-        where.startTime.gte = new Date(startDate);
+        where.date.gte = new Date(startDate);
       }
       if (endDate) {
-        where.startTime.lte = new Date(endDate);
+        where.date.lte = new Date(endDate);
       }
     }
 
     const appointments = await prisma.appointment.findMany({
       where,
       include: {
-        patient: {
+        user: {
           select: {
             id: true,
-            fullName: true,
+            name: true,
             email: true,
             phone: true,
           },
         },
-        provider: {
-          select: {
-            id: true,
-            fullName: true,
-            title: true,
-            email: true,
-          },
-        },
-        doctor: {
-          select: {
-            id: true,
-            fullName: true,
-            specialization: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-        clinic: {
-          select: {
-            id: true,
-            name: true,
-            addressLine1: true,
-            city: true,
-          },
-        },
       },
       orderBy: {
-        startTime: "asc",
+        date: "asc",
       },
     });
 
@@ -85,20 +48,13 @@ export async function GET(request: NextRequest) {
       success: true,
       appointments: appointments.map((appointment) => ({
         id: appointment.id,
-        clinicId: appointment.clinicId,
-        clinic: appointment.clinic,
-        patientId: appointment.patientId,
-        patient: appointment.patient,
-        providerId: appointment.providerId,
-        provider: appointment.provider,
-        doctorId: appointment.doctorId,
-        doctor: appointment.doctor,
+        userId: appointment.userId,
+        user: appointment.user,
+        doctorName: appointment.doctorName,
+        treatment: appointment.treatment,
+        date: appointment.date,
+        time: appointment.time,
         status: appointment.status,
-        source: appointment.source,
-        title: appointment.title,
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        location: appointment.location,
         notes: appointment.notes,
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
@@ -153,71 +109,39 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      clinicId,
-      patientId,
-      providerId,
-      doctorId,
+      userId,
+      doctorName,
+      treatment,
+      date,
+      time,
       status,
-      source,
-      title,
-      startTime,
-      endTime,
-      location,
       notes,
     } = body;
 
-    if (!clinicId || !patientId || !startTime) {
+    if (!userId || !doctorName || !treatment || !date || !time) {
       return NextResponse.json(
-        { success: false, error: "clinicId, patientId, and startTime are required" },
+        { success: false, error: "userId, doctorName, treatment, date, and time are required" },
         { status: 400 }
       );
     }
 
     const appointment = await prisma.appointment.create({
       data: {
-        clinicId,
-        patientId,
-        providerId,
-        doctorId,
-        status: status || "SCHEDULED",
-        source: source || "WEB",
-        title,
-        startTime: new Date(startTime),
-        endTime: endTime ? new Date(endTime) : undefined,
-        location,
+        userId,
+        doctorName,
+        treatment,
+        date: new Date(date),
+        time,
+        status: status || "PENDING",
         notes,
       },
       include: {
-        patient: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        provider: {
-          select: {
-            id: true,
-            fullName: true,
-            title: true,
-          },
-        },
-        doctor: {
-          select: {
-            id: true,
-            fullName: true,
-            specialization: true,
-            email: true,
-            phoneNumber: true,
-          },
-        },
-        clinic: {
+        user: {
           select: {
             id: true,
             name: true,
-            addressLine1: true,
-            city: true,
+            email: true,
+            phone: true,
           },
         },
       },
@@ -235,7 +159,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-
-
-

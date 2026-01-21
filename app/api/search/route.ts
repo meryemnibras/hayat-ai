@@ -4,31 +4,57 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
+    const userId = searchParams.get("userId");
     const query = searchParams.get("q");
-    const type = searchParams.get("type"); // "patients", "appointments", "doctors", "all"
+    const type = searchParams.get("type"); // "appointments", "users", "all"
 
-    if (!clinicId || !query) {
+    if (!query) {
       return NextResponse.json(
-        { error: "clinicId and q (query) are required" },
+        { error: "q (query) is required" },
         { status: 400 }
       );
     }
 
     const searchTerm = query.toLowerCase();
     const results: {
-      patients?: unknown[];
       appointments?: unknown[];
-      doctors?: unknown[];
+      users?: unknown[];
     } = {};
 
-    // Search patients
-    if (!type || type === "patients" || type === "all") {
-      const patients = await prisma.patient.findMany({
+    // Search appointments
+    if (!type || type === "appointments" || type === "all") {
+      const appointments = await prisma.appointment.findMany({
         where: {
-          clinicId,
+          ...(userId && { userId }),
           OR: [
-            { fullName: { contains: searchTerm, mode: "insensitive" } },
+            { doctorName: { contains: searchTerm, mode: "insensitive" } },
+            { treatment: { contains: searchTerm, mode: "insensitive" } },
+            { notes: { contains: searchTerm, mode: "insensitive" } },
+          ],
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        take: 20,
+        orderBy: {
+          date: "desc",
+        },
+      });
+      results.appointments = appointments;
+    }
+
+    // Search users
+    if (!type || type === "users" || type === "all") {
+      const users = await prisma.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: searchTerm, mode: "insensitive" } },
             { email: { contains: searchTerm, mode: "insensitive" } },
             { phone: { contains: searchTerm, mode: "insensitive" } },
           ],
@@ -36,79 +62,14 @@ export async function GET(request: NextRequest) {
         take: 20,
         select: {
           id: true,
-          fullName: true,
+          name: true,
           email: true,
           phone: true,
+          role: true,
           createdAt: true,
         },
       });
-      results.patients = patients;
-    }
-
-    // Search appointments
-    if (!type || type === "appointments" || type === "all") {
-      const appointments = await prisma.appointment.findMany({
-        where: {
-          clinicId,
-          OR: [
-            {
-              patient: {
-                fullName: { contains: searchTerm, mode: "insensitive" },
-              },
-            },
-            {
-              doctor: {
-                fullName: { contains: searchTerm, mode: "insensitive" },
-              },
-            },
-            {
-              title: { contains: searchTerm, mode: "insensitive" },
-            },
-          ],
-        },
-        include: {
-          patient: {
-            select: {
-              id: true,
-              fullName: true,
-            },
-          },
-          doctor: {
-            select: {
-              id: true,
-              fullName: true,
-              specialization: true,
-            },
-          },
-        },
-        take: 20,
-        orderBy: {
-          startTime: "desc",
-        },
-      });
-      results.appointments = appointments;
-    }
-
-    // Search doctors
-    if (!type || type === "doctors" || type === "all") {
-      const doctors = await prisma.doctor.findMany({
-        where: {
-          OR: [
-            { fullName: { contains: searchTerm, mode: "insensitive" } },
-            { specialization: { contains: searchTerm, mode: "insensitive" } },
-            { email: { contains: searchTerm, mode: "insensitive" } },
-          ],
-        },
-        take: 20,
-        select: {
-          id: true,
-          fullName: true,
-          specialization: true,
-          email: true,
-          yearsExperience: true,
-        },
-      });
-      results.doctors = doctors;
+      results.users = users;
     }
 
     return NextResponse.json({
@@ -116,9 +77,8 @@ export async function GET(request: NextRequest) {
       query: searchTerm,
       results,
       counts: {
-        patients: (results.patients?.length || 0),
         appointments: (results.appointments?.length || 0),
-        doctors: (results.doctors?.length || 0),
+        users: (results.users?.length || 0),
       },
     });
   } catch (error: any) {
@@ -129,4 +89,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           message: "Registration successful (mock - Clerk not configured)",
           user: {
             email,
-            fullName,
+            name: fullName,
           },
         },
         { status: 201 }
@@ -47,7 +47,8 @@ export async function POST(req: Request) {
 
     try {
       // Check if user already exists
-      const existingUsers = await clerkClient.users.getUserList({
+      const clerkClientInstance = await clerkClient();
+      const existingUsers = await clerkClientInstance.users.getUserList({
         emailAddress: [email],
         limit: 1,
       });
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       }
 
       // Create user in Clerk
-      const clerkUser = await clerkClient.users.createUser({
+      const clerkUser = await clerkClientInstance.users.createUser({
         emailAddress: [email],
         password,
         firstName: fullName.split(" ")[0] || fullName,
@@ -72,12 +73,10 @@ export async function POST(req: Request) {
       // Create user in database
       const dbUser = await prisma.user.create({
         data: {
-          clerkId: clerkUser.id,
           email: email,
-          fullName: fullName,
+          name: fullName,
           phone: phone,
-          clinicId: process.env.DEFAULT_CLINIC_ID || "",
-          role: "STAFF",
+          role: "PATIENT",
         },
       });
 
@@ -86,7 +85,7 @@ export async function POST(req: Request) {
         user: {
           id: dbUser.id,
           email: dbUser.email,
-          fullName: dbUser.fullName,
+          name: dbUser.name,
         },
       });
     } catch (clerkError: any) {
@@ -114,7 +113,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
-
-

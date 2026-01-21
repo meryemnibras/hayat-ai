@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomerPortalSession } from "@/lib/billing/stripe";
-import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,26 +12,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscription = await prisma.subscription.findUnique({
-      where: { clinicId },
-      select: { stripeCustomerId: true },
-    });
-
-    if (!subscription?.stripeCustomerId) {
-      return NextResponse.json(
-        { error: "No subscription found for this clinic" },
-        { status: 400 }
-      );
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-    const session = await createCustomerPortalSession({
-      customerId: subscription.stripeCustomerId,
-      returnUrl: `${baseUrl}/dashboard/settings/billing`,
-    });
-
-    return NextResponse.json({ url: session.url });
+    // TODO: Implement subscription model in Prisma schema
+    // For now, return a mock response
+    return NextResponse.json(
+      { 
+        error: "Billing portal not yet configured. Subscription model needs to be added to Prisma schema.",
+        message: "This feature requires a Subscription model in the database schema."
+      },
+      { status: 501 }
+    );
   } catch (error) {
     console.error("Portal error:", error);
     return NextResponse.json(
@@ -42,4 +29,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

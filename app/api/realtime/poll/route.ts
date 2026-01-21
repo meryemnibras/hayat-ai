@@ -4,16 +4,9 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
+    const userId = searchParams.get("userId");
     const since = searchParams.get("since");
     const events = searchParams.get("events")?.split(",") || [];
-
-    if (!clinicId) {
-      return NextResponse.json(
-        { error: "clinicId is required" },
-        { status: 400 }
-      );
-    }
 
     const sinceDate = since ? new Date(since) : new Date(Date.now() - 60000); // Default: last minute
     const updates: Array<{
@@ -26,9 +19,11 @@ export async function GET(request: NextRequest) {
     if (events.includes("new_message") || events.length === 0) {
       const newMessages = await prisma.message.findMany({
         where: {
-          conversation: {
-            clinicId,
-          },
+          ...(userId && {
+            conversation: {
+              userId,
+            },
+          }),
           createdAt: {
             gte: sinceDate,
           },
@@ -36,10 +31,10 @@ export async function GET(request: NextRequest) {
         include: {
           conversation: {
             include: {
-              patient: {
+              user: {
                 select: {
                   id: true,
-                  fullName: true,
+                  name: true,
                 },
               },
             },
@@ -54,9 +49,9 @@ export async function GET(request: NextRequest) {
           data: {
             id: message.id,
             conversationId: message.conversationId,
-            senderType: message.senderType,
+            role: message.role,
             content: message.content,
-            patient: message.conversation.patient,
+            user: message.conversation.user,
             createdAt: message.createdAt,
           },
           timestamp: message.createdAt.toISOString(),
@@ -68,23 +63,17 @@ export async function GET(request: NextRequest) {
     if (events.includes("new_appointment") || events.length === 0) {
       const newAppointments = await prisma.appointment.findMany({
         where: {
-          clinicId,
+          ...(userId && { userId }),
           createdAt: {
             gte: sinceDate,
           },
         },
         include: {
-          patient: {
+          user: {
             select: {
               id: true,
-              fullName: true,
-            },
-          },
-          doctor: {
-            select: {
-              id: true,
-              fullName: true,
-              specialization: true,
+              name: true,
+              email: true,
             },
           },
         },
@@ -96,9 +85,11 @@ export async function GET(request: NextRequest) {
           event: "new_appointment",
           data: {
             id: appointment.id,
-            patient: appointment.patient,
-            doctor: appointment.doctor,
-            startTime: appointment.startTime,
+            user: appointment.user,
+            doctorName: appointment.doctorName,
+            treatment: appointment.treatment,
+            date: appointment.date,
+            time: appointment.time,
             status: appointment.status,
             createdAt: appointment.createdAt,
           },
@@ -111,16 +102,16 @@ export async function GET(request: NextRequest) {
     if (events.includes("appointment_update") || events.length === 0) {
       const updatedAppointments = await prisma.appointment.findMany({
         where: {
-          clinicId,
+          ...(userId && { userId }),
           updatedAt: {
             gte: sinceDate,
           },
         },
         include: {
-          patient: {
+          user: {
             select: {
               id: true,
-              fullName: true,
+              name: true,
             },
           },
         },
@@ -132,9 +123,10 @@ export async function GET(request: NextRequest) {
           event: "appointment_update",
           data: {
             id: appointment.id,
-            patient: appointment.patient,
+            user: appointment.user,
             status: appointment.status,
-            startTime: appointment.startTime,
+            date: appointment.date,
+            time: appointment.time,
             updatedAt: appointment.updatedAt,
           },
           timestamp: appointment.updatedAt.toISOString(),
@@ -151,4 +143,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

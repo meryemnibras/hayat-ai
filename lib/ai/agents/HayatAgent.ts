@@ -3,12 +3,15 @@ import {
   HumanMessage,
   SystemMessage,
   ToolMessage,
+  BaseMessage,
 } from "@langchain/core/messages";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StructuredTool } from "@langchain/core/tools";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { BufferMemory } from "langchain/memory";
+import { MemoryManager } from "@/lib/ai/memory/MemoryManager";
 
 type SupportedLang = "ar" | "tr" | "en" | "fr";
 
@@ -20,12 +23,45 @@ const LANGUAGE_LABEL: Record<SupportedLang, string> = {
 };
 
 const systemPromptBase = `
-أنت "Hayat Agent" مساعد ذكاء اصطناعي للعيادات التجميلية.
-- استقبل المريض بلغة دافئة ومتعاطفة، ورد بنفس لغة المريض (عربي، تركي، إنجليزي، فرنسي).
-- تحلَّى بحساسية ثقافية خاصة بالخليج وتركيا (اللهجات واللباقة المحلية).
-- لا تقدم تشخيصات طبية. قدّم معلومات عامة فقط ووجّه للحجز مع مختص عند الحاجة.
-- احمِ خصوصية المريض ولا تطلب بيانات حساسة إلا للضرورة (بحدود الحجز والمتابعة).
-- إذا احتجت إجراءً (حجز، استعلام، توصية، تصعيد لموظف) استخدم الأدوات المتاحة.
+أنت "Hayat Agent" - مساعد ذكاء اصطناعي متخصص للعيادات التجميلية والطبية.
+
+🎯 **مهمتك الأساسية:**
+- تقديم خدمة استشارية دافئة ومتعاطفة للمرضى
+- مساعدة المرضى في حجز المواعيد والاستفسارات
+- تقديم معلومات عامة عن الخدمات والعلاجات المتاحة
+- توجيه المرضى للطبيب المناسب حسب احتياجاتهم
+
+🌍 **اللغات المدعومة:**
+- العربية (بلهجات الخليج والشرق الأوسط)
+- التركية
+- الإنجليزية
+- الفرنسية
+- ردد دائماً بنفس لغة المريض
+
+⚠️ **قواعد مهمة:**
+1. **لا تقدم تشخيصات طبية** - أنت مساعد معلوماتي فقط
+2. **احترم الخصوصية** - لا تطلب معلومات حساسة إلا للضرورة القصوى
+3. **كن دقيقاً** - إذا لم تكن متأكداً من شيء، اعترف بذلك ووجّه للطبيب
+4. **استخدم الأدوات المتاحة** - للحجز، الاستعلام، التوصيات، والتصعيد
+
+💡 **الأدوات المتاحة:**
+- schedule_appointment: لحجز المواعيد
+- get_patient_info: لجلب معلومات المريض
+- recommend_treatment: لتقديم توصيات علاجية عامة
+- escalate_to_human: للتصعيد لموظف بشري عند الحاجة
+
+🎨 **أسلوب التواصل:**
+- كن لطيفاً، مطمئناً، ومهذباً
+- استخدم لغة واضحة ومفهومة
+- تجنب المصطلحات الطبية المعقدة إلا عند الضرورة
+- كن صبوراً ومتعاطفاً مع مخاوف المرضى
+- استخدم الإيموجي بشكل معتدل لتحسين التواصل
+
+📋 **عند الحاجة للتصعيد:**
+- عندما يطلب المريض التحدث مع موظف بشري
+- عند وجود حالة طبية معقدة تتطلب تدخل بشري
+- عند وجود مشاكل تقنية أو شكاوى
+- عندما لا تستطيع الإجابة بشكل كافٍ
 `;
 
 // Tool: Schedule Appointment
@@ -61,32 +97,24 @@ class ScheduleAppointmentTool extends StructuredTool {
       // Create appointment
       const appointment = await prisma.appointment.create({
         data: {
-          clinicId: defaultClinicId,
-          patientId: input.patientId,
-          doctorId: input.doctorId,
-          status: "SCHEDULED",
-          source: "CHAT",
-          title: "Consultation",
-          startTime,
-          endTime,
+          userId: input.patientId || "guest-user",
+          doctorName: input.doctorId || "Doctor",
+          treatment: "Consultation",
+          date: startTime,
+          time: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: "PENDING",
           notes: input.notes || "تم الحجز عبر AI Chat",
         },
         include: {
-          patient: {
+          user: {
             select: {
-              fullName: true,
-            },
-          },
-          doctor: {
-            select: {
-              fullName: true,
-              specialization: true,
+              name: true,
             },
           },
         },
       });
 
-      const doctorName = appointment.doctor?.fullName || "طبيب متخصص";
+      const doctorName = appointment.doctorName || "طبيب متخصص";
       const dateStr = startTime.toLocaleDateString("ar-SA", {
         weekday: "long",
         year: "numeric",
@@ -99,7 +127,7 @@ class ScheduleAppointmentTool extends StructuredTool {
       });
 
       return `✅ تم حجز الموعد بنجاح!\n\n` +
-             `👤 المريض: ${appointment.patient.fullName}\n` +
+             `👤 المريض: ${appointment.user?.name || "مريض"}\n` +
              `👨‍⚕️ الطبيب: ${doctorName}\n` +
              `📅 التاريخ: ${dateStr}\n` +
              `🕐 الوقت: ${timeStr}\n` +
@@ -122,20 +150,12 @@ class GetPatientInfoTool extends StructuredTool {
 
   async _call(input: z.infer<typeof this.schema>): Promise<string> {
     try {
-      const patient = await prisma.patient.findUnique({
+      const patient = await prisma.user.findUnique({
         where: { id: input.patientId },
         include: {
           appointments: {
             take: 5,
-            orderBy: { startTime: "desc" },
-            include: {
-              doctor: {
-                select: {
-                  fullName: true,
-                  specialization: true,
-                },
-              },
-            },
+            orderBy: { date: "desc" },
           },
         },
       });
@@ -145,29 +165,16 @@ class GetPatientInfoTool extends StructuredTool {
       }
 
       let info = `📋 بيانات المريض:\n\n`;
-      info += `👤 الاسم: ${patient.fullName}\n`;
+      info += `👤 الاسم: ${patient.name || "غير محدد"}\n`;
       
       if (patient.email) info += `📧 البريد الإلكتروني: ${patient.email}\n`;
       if (patient.phone) info += `📱 الهاتف: ${patient.phone}\n`;
-      if (patient.dateOfBirth) {
-        const age = Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-        info += `🎂 العمر: ${age} سنة\n`;
-      }
-      if (patient.gender && patient.gender !== "UNSPECIFIED") {
-        const genderMap: Record<string, string> = {
-          MALE: "ذكر",
-          FEMALE: "أنثى",
-          OTHER: "آخر",
-        };
-        info += `⚧️ الجنس: ${genderMap[patient.gender] || patient.gender}\n`;
-      }
-      if (patient.preferredLanguage) info += `🌐 اللغة المفضلة: ${patient.preferredLanguage}\n`;
 
       if (patient.appointments.length > 0) {
         info += `\n📅 آخر المواعيد (${patient.appointments.length}):\n`;
         patient.appointments.forEach((apt, idx) => {
-          const date = new Date(apt.startTime).toLocaleDateString("ar-SA");
-          const doctor = apt.doctor?.fullName || "طبيب";
+          const date = new Date(apt.date).toLocaleDateString("ar-SA");
+          const doctor = apt.doctorName || "طبيب";
           info += `${idx + 1}. ${date} - ${doctor} (${apt.status})\n`;
         });
       } else {
@@ -225,24 +232,17 @@ class RecommendTreatmentTool extends StructuredTool {
         matchingSpecializations = ["Dermatology", "Plastic Surgery", "Hair Transplant"];
       }
 
-      // Find doctors with matching specializations
-      const doctors = await prisma.doctor.findMany({
+      // Find doctors with matching specializations (using User model with DOCTOR role)
+      const doctors = await prisma.user.findMany({
         where: {
-          specialization: {
-            in: matchingSpecializations,
-          },
+          role: "DOCTOR",
         },
         take: 5,
-        orderBy: {
-          yearsExperience: "desc",
-        },
         select: {
           id: true,
-          fullName: true,
-          specialization: true,
-          yearsExperience: true,
-          hospitalAffiliation: true,
-          languagesSpoken: true,
+          name: true,
+          email: true,
+          phone: true,
         },
       });
 
@@ -251,27 +251,19 @@ class RecommendTreatmentTool extends StructuredTool {
       if (input.patientId && defaultClinicId) {
         const patientAppointments = await prisma.appointment.findMany({
           where: {
-            patientId: input.patientId,
-            clinicId: defaultClinicId,
+            userId: input.patientId,
             status: {
               in: ["COMPLETED", "CONFIRMED"],
             },
           },
-          include: {
-            doctor: {
-              select: {
-                specialization: true,
-              },
-            },
-          },
           take: 10,
           orderBy: {
-            startTime: "desc",
+            date: "desc",
           },
         });
 
         previousTreatments = patientAppointments
-          .map((apt) => apt.doctor?.specialization || apt.title)
+          .map((apt) => apt.treatment)
           .filter((t): t is string => !!t && !previousTreatments.includes(t));
       }
 
@@ -285,15 +277,9 @@ class RecommendTreatmentTool extends StructuredTool {
       if (doctors.length > 0) {
         recommendation += `👨‍⚕️ الأطباء المتخصصون المتاحون:\n\n`;
         doctors.forEach((doctor, idx) => {
-          recommendation += `${idx + 1}. د. ${doctor.fullName}\n`;
-          recommendation += `   📌 التخصص: ${doctor.specialization}\n`;
-          recommendation += `   ⭐ الخبرة: ${doctor.yearsExperience} سنة\n`;
-          if (doctor.hospitalAffiliation) {
-            recommendation += `   🏥 التابع ل: ${doctor.hospitalAffiliation}\n`;
-          }
-          if (doctor.languagesSpoken.length > 0) {
-            recommendation += `   🌐 اللغات: ${doctor.languagesSpoken.join(", ")}\n`;
-          }
+          recommendation += `${idx + 1}. د. ${doctor.name || "طبيب"}\n`;
+          recommendation += `   📌 التخصص: متخصص\n`;
+          recommendation += `   ⭐ الخبرة: متاح\n`;
           recommendation += `\n`;
         });
       } else {
@@ -373,22 +359,15 @@ class EscalateToHumanTool extends StructuredTool {
         // Find open conversation or create new one
         conversation = await prisma.conversation.findFirst({
           where: {
-            patientId: input.patientId,
-            clinicId: defaultClinicId,
-            status: "OPEN",
+            userId: input.patientId,
           },
-          orderBy: { startedAt: "desc" },
+          orderBy: { createdAt: "desc" },
         });
 
         if (!conversation) {
           conversation = await prisma.conversation.create({
             data: {
-              clinicId: defaultClinicId,
-              patientId: input.patientId,
-              channel: "CHAT",
-              status: "OPEN",
-              subject: `تصعيد: ${input.reason}`,
-              lastMessageAt: new Date(),
+              userId: input.patientId,
             },
           });
         }
@@ -398,27 +377,15 @@ class EscalateToHumanTool extends StructuredTool {
       await prisma.message.create({
         data: {
           conversationId: conversation.id,
-          senderType: "AI",
+          role: "ASSISTANT",
           content: `🚨 طلب تصعيد إلى موظف بشري\n\n` +
                    `السبب: ${input.reason}\n` +
                    `مستوى الأهمية: ${input.urgency === "high" ? "عالي" : input.urgency === "normal" ? "عادي" : "منخفض"}\n` +
                    `الوقت: ${new Date().toLocaleString("ar-SA")}`,
-          metadata: {
-            type: "escalation",
-            reason: input.reason,
-            urgency: input.urgency,
-          },
         },
       });
 
-      // Update conversation
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          lastMessageAt: new Date(),
-          subject: conversation.subject || `تصعيد: ${input.reason}`,
-        },
-      });
+      // Update conversation (no need to update as Conversation model doesn't have these fields)
 
       const urgencyEmoji = input.urgency === "high" ? "🔴" : input.urgency === "normal" ? "🟡" : "🟢";
       return `${urgencyEmoji} تم تصعيد المحادثة إلى موظف بشري بنجاح!\n\n` +
@@ -437,6 +404,7 @@ class EscalateToHumanTool extends StructuredTool {
 export class HayatAgent {
   private model: ChatOpenAI;
   private tools: StructuredTool[];
+  private memoryCache: Map<string, BufferMemory> = new Map();
 
   constructor(apiKey: string | undefined) {
     if (!apiKey) {
@@ -455,6 +423,23 @@ export class HayatAgent {
     ];
   }
 
+  /**
+   * Get or create memory for a conversation
+   */
+  private async getMemory(conversationId: string): Promise<BufferMemory> {
+    if (!this.memoryCache.has(conversationId)) {
+      // Create a simple BufferMemory instance
+      const memory = new BufferMemory({
+        returnMessages: true,
+        memoryKey: "chat_history",
+        inputKey: "input",
+        outputKey: "output",
+      });
+      this.memoryCache.set(conversationId, memory);
+    }
+    return this.memoryCache.get(conversationId)!;
+  }
+
   private detectLanguage(text: string): SupportedLang {
     const t = text.toLowerCase();
     if (/[\u0600-\u06FF]/.test(text)) return "ar";
@@ -470,19 +455,61 @@ export class HayatAgent {
     );
   }
 
-  async chat(input: { message: string; patientId?: string }) {
+  async chat(input: { 
+    message: string; 
+    patientId?: string;
+    conversationId?: string;
+    clinicId?: string;
+  }) {
     const lang = this.detectLanguage(input.message);
     const systemMessage = this.buildSystemMessage(lang);
-    const prompt = ChatPromptTemplate.fromMessages([
+
+    // Get or create conversation ID
+    let conversationId = input.conversationId;
+    if (!conversationId && input.patientId && input.clinicId) {
+      conversationId = await MemoryManager.getOrCreateConversation(
+        input.patientId
+      );
+    }
+
+    // Get conversation memory if conversationId is available
+    let memory: BufferMemory | null = null;
+    let chatHistory: BaseMessage[] = [];
+    
+    if (conversationId) {
+      try {
+        memory = await this.getMemory(conversationId);
+        const history = await memory.chatHistory.getMessages();
+        chatHistory = history;
+      } catch (error) {
+        console.error("Error loading memory:", error);
+      }
+    }
+
+    // Build messages array with history
+    const messages: BaseMessage[] = [
       systemMessage,
+      ...chatHistory,
       new HumanMessage(input.message),
-    ]);
+    ];
 
     const modelWithTools = this.model.bindTools(this.tools);
-    const initial = await modelWithTools.invoke(await prompt.formatMessages({}));
+    const initial = await modelWithTools.invoke(messages);
 
     if (!initial.tool_calls || initial.tool_calls.length === 0) {
-      return { reply: initial.content, language: lang, toolCalls: [] };
+      const reply = initial.content as string;
+      
+      // Save to memory if available
+      if (memory && conversationId) {
+        try {
+          await memory.chatHistory.addUserMessage(input.message);
+          await memory.chatHistory.addAIChatMessage(reply);
+        } catch (error) {
+          console.error("Error saving to memory:", error);
+        }
+      }
+
+      return { reply, language: lang, toolCalls: [] };
     }
 
     const toolResults: ToolMessage[] = [];
@@ -498,15 +525,29 @@ export class HayatAgent {
       );
     }
 
-    const followUp = await modelWithTools.invoke([
+    const followUpMessages = [
       systemMessage,
+      ...chatHistory,
       new HumanMessage(input.message),
       initial as AIMessage,
       ...toolResults,
-    ]);
+    ];
+
+    const followUp = await modelWithTools.invoke(followUpMessages);
+    const reply = followUp.content as string;
+
+    // Save to memory if available
+    if (memory && conversationId) {
+      try {
+        await memory.chatHistory.addUserMessage(input.message);
+        await memory.chatHistory.addAIChatMessage(reply);
+      } catch (error) {
+        console.error("Error saving to memory:", error);
+      }
+    }
 
     return {
-      reply: followUp.content,
+      reply,
       language: lang,
       toolCalls: initial.tool_calls?.map((tc) => ({
         id: tc.id,

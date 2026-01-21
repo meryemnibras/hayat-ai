@@ -1,6 +1,12 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { authMiddleware } from "@clerk/nextjs";
+
+// Define protected routes that require authentication
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/api/ai(.*)",
+]);
 
 // Domain-based routing function
 function handleDomainRouting(request: NextRequest): NextResponse | null {
@@ -92,31 +98,27 @@ function handleDomainRouting(request: NextRequest): NextResponse | null {
   return null; // Let Clerk handle it
 }
 
-// Combine Clerk auth with domain routing
-export default authMiddleware({
-  publicRoutes: [
-    "/",
-    "/pricing",
-    "/portal",
-    "/portal/login",
-    "/portal/register",
-    "/portal/register-simple",
-    "/api/health",
-    "/api/portal/doctors",
-    "/api/portal/appointments",
-  ],
-  ignoredRoutes: [
-    "/api/webhooks/(.*)",
-  ],
-  beforeAuth: (req) => {
-    // Handle domain routing first
-    const domainResponse = handleDomainRouting(req);
-    if (domainResponse) {
-      return domainResponse;
+// Main middleware function combining Clerk auth and domain routing
+export default clerkMiddleware(async (auth, request: NextRequest) => {
+  // Handle domain routing first
+  const domainResponse = handleDomainRouting(request);
+  if (domainResponse) {
+    return domainResponse;
+  }
+
+  // Protect routes that require authentication
+  if (isProtectedRoute(request)) {
+    const { userId } = await auth();
+    if (!userId) {
+      // Redirect to sign-in page
+      const signInUrl = new URL("/sign-in", request.url);
+      signInUrl.searchParams.set("redirect_url", request.url);
+      return NextResponse.redirect(signInUrl);
     }
-    // Continue with Clerk auth
-    return undefined;
-  },
+  }
+
+  // Continue with normal routing
+  return NextResponse.next();
 });
 
 export const config = {

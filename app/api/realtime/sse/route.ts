@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const clinicId = searchParams.get("clinicId");
+  const userId = searchParams.get("userId");
 
-  if (!clinicId) {
-    return new Response("clinicId is required", { status: 400 });
+  if (!userId) {
+    return new Response("userId is required", { status: 400 });
   }
 
   const encoder = new TextEncoder();
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
           const newMessages = await prisma.message.findMany({
             where: {
               conversation: {
-                clinicId,
+                userId,
               },
               createdAt: {
                 gte: since,
@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
             include: {
               conversation: {
                 include: {
-                  patient: {
+                  user: {
                     select: {
                       id: true,
-                      fullName: true,
+                      name: true,
                     },
                   },
                 },
@@ -58,9 +58,9 @@ export async function GET(request: NextRequest) {
               data: {
                 id: message.id,
                 conversationId: message.conversationId,
-                senderType: message.senderType,
+                role: message.role,
                 content: message.content,
-                patient: message.conversation.patient,
+                user: message.conversation.user,
               },
               timestamp: message.createdAt.toISOString(),
             });
@@ -69,22 +69,16 @@ export async function GET(request: NextRequest) {
           // Check for new appointments
           const newAppointments = await prisma.appointment.findMany({
             where: {
-              clinicId,
+              userId,
               createdAt: {
                 gte: since,
               },
             },
             include: {
-              patient: {
+              user: {
                 select: {
                   id: true,
-                  fullName: true,
-                },
-              },
-              doctor: {
-                select: {
-                  id: true,
-                  fullName: true,
+                  name: true,
                 },
               },
             },
@@ -96,9 +90,11 @@ export async function GET(request: NextRequest) {
               event: "new_appointment",
               data: {
                 id: appointment.id,
-                patient: appointment.patient,
-                doctor: appointment.doctor,
-                startTime: appointment.startTime,
+                user: appointment.user,
+                doctorName: appointment.doctorName,
+                treatment: appointment.treatment,
+                date: appointment.date,
+                time: appointment.time,
                 status: appointment.status,
               },
               timestamp: appointment.createdAt.toISOString(),
@@ -126,4 +122,3 @@ export async function GET(request: NextRequest) {
     },
   });
 }
-

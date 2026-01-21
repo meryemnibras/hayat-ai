@@ -1,7 +1,8 @@
 // Analytics utility for tracking events
 // Supports PostHog (recommended) or custom implementation
 
-type EventProperties = Record<string, string | number | boolean | null>;
+type EventPropertyValue = string | number | boolean | null | undefined;
+type EventProperties = Record<string, EventPropertyValue | Record<string, EventPropertyValue>>;
 
 interface AnalyticsUser {
   id: string;
@@ -28,10 +29,10 @@ class Analytics {
     this.sendEvent("$identify", {
       $user_id: user.id,
       $set: {
-        email: user.email,
-        clinicId: user.clinicId,
-        role: user.role,
-      },
+        email: user.email || null,
+        clinicId: user.clinicId || null,
+        role: user.role || null,
+      } as any,
     });
   }
 
@@ -63,7 +64,12 @@ class Analytics {
     toolsUsed?: string[];
     responseTime?: number;
   }) {
-    this.track("ai_interaction", properties);
+    this.track("ai_interaction", {
+      clinicId: properties.clinicId,
+      language: properties.language,
+      toolsUsed: properties.toolsUsed?.join(",") || null,
+      responseTime: properties.responseTime || null,
+    });
   }
 
   // Appointment tracking

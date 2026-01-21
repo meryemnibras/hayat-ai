@@ -61,87 +61,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscriptionId = session.subscription as string;
   const customerId = session.customer as string;
 
-  // Retrieve subscription details
-  const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
-  const subscription = subscriptionResponse as unknown as SubscriptionWithPeriod;
-  const priceId = subscription.items.data[0]?.price.id;
-  const tier = getTierFromPriceId(priceId);
-
-  // Create or update subscription record
-  await prisma.subscription.upsert({
-    where: { clinicId },
-    create: {
-      clinicId,
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: priceId,
-      tier,
-      status: mapSubscriptionStatus(subscription.status),
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      trialEndsAt: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
-    },
-    update: {
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      stripePriceId: priceId,
-      tier,
-      status: mapSubscriptionStatus(subscription.status),
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      trialEndsAt: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
-    },
-  });
-
-  console.log(`Subscription created for clinic ${clinicId}`);
+  // TODO: Implement subscription model in Prisma schema
+  console.log(`✅ Checkout completed for clinic ${clinicId}, subscription ${subscriptionId}, customer ${customerId}`);
+  console.log("⚠️ Subscription model not yet implemented in Prisma schema");
 }
 
 async function handleSubscriptionUpdated(subscriptionEvent: Stripe.Subscription) {
   const subscription = subscriptionEvent as unknown as SubscriptionWithPeriod;
   const clinicId = subscription.metadata?.clinicId;
-  if (!clinicId) {
-    // Try to find by stripeSubscriptionId
-    const existing = await prisma.subscription.findUnique({
-      where: { stripeSubscriptionId: subscription.id },
-    });
-    if (!existing) {
-      console.error("Cannot find clinic for subscription", subscription.id);
-      return;
-    }
-  }
-
-  const priceId = subscription.items.data[0]?.price.id;
-  const tier = getTierFromPriceId(priceId);
-
-  await prisma.subscription.update({
-    where: { stripeSubscriptionId: subscription.id },
-    data: {
-      stripePriceId: priceId,
-      tier,
-      status: mapSubscriptionStatus(subscription.status),
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    },
-  });
-
-  console.log(`Subscription ${subscription.id} updated`);
+  
+  // TODO: Implement subscription model in Prisma schema
+  console.log(`✅ Subscription updated: ${subscription.id} for clinic ${clinicId || 'unknown'}`);
+  console.log("⚠️ Subscription model not yet implemented in Prisma schema");
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await prisma.subscription.update({
-    where: { stripeSubscriptionId: subscription.id },
-    data: {
-      status: "CANCELED",
-      cancelAtPeriodEnd: false,
-    },
-  });
-
-  console.log(`Subscription ${subscription.id} canceled`);
+  // TODO: Implement subscription model in Prisma schema
+  console.log(`✅ Subscription deleted: ${subscription.id}`);
+  console.log("⚠️ Subscription model not yet implemented in Prisma schema");
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -151,14 +88,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     : invoiceData.subscription?.id;
   if (!subscriptionId) return;
 
-  // Reset usage for new billing period
-  const sub = await prisma.subscription.findUnique({
-    where: { stripeSubscriptionId: subscriptionId },
-  });
-
-  if (sub) {
-    console.log(`Invoice paid for subscription ${subscriptionId}`);
-  }
+  // TODO: Implement subscription model in Prisma schema
+  console.log(`✅ Invoice paid for subscription ${subscriptionId}`);
+  console.log("⚠️ Subscription model not yet implemented in Prisma schema");
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
@@ -168,12 +100,9 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     : invoiceData.subscription?.id;
   if (!subscriptionId) return;
 
-  await prisma.subscription.update({
-    where: { stripeSubscriptionId: subscriptionId },
-    data: { status: "PAST_DUE" },
-  });
-
-  console.log(`Payment failed for subscription ${subscriptionId}`);
+  // TODO: Implement subscription model in Prisma schema
+  console.log(`❌ Payment failed for subscription ${subscriptionId}`);
+  console.log("⚠️ Subscription model not yet implemented in Prisma schema");
 }
 
 export async function POST(request: NextRequest) {

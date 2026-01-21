@@ -4,17 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get("clinicId");
-    const reportType = searchParams.get("type"); // "financial", "appointments", "patients", "performance"
+    const userId = searchParams.get("userId");
+    const reportType = searchParams.get("type") || "appointments"; // "appointments", "users"
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-
-    if (!clinicId) {
-      return NextResponse.json(
-        { error: "clinicId is required" },
-        { status: 400 }
-      );
-    }
 
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
@@ -23,31 +16,24 @@ export async function GET(request: NextRequest) {
       case "appointments": {
         const appointments = await prisma.appointment.findMany({
           where: {
-            clinicId,
-            startTime: {
+            ...(userId && { userId }),
+            date: {
               gte: start,
               lte: end,
             },
           },
           include: {
-            patient: {
+            user: {
               select: {
                 id: true,
-                fullName: true,
+                name: true,
                 email: true,
                 phone: true,
               },
             },
-            doctor: {
-              select: {
-                id: true,
-                fullName: true,
-                specialization: true,
-              },
-            },
           },
           orderBy: {
-            startTime: "asc",
+            date: "asc",
           },
         });
 
@@ -68,10 +54,9 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      case "patients": {
-        const patients = await prisma.patient.findMany({
+      case "users": {
+        const users = await prisma.user.findMany({
           where: {
-            clinicId,
             createdAt: {
               gte: start,
               lte: end,
@@ -81,7 +66,7 @@ export async function GET(request: NextRequest) {
             appointments: {
               select: {
                 id: true,
-                startTime: true,
+                date: true,
                 status: true,
               },
             },
@@ -91,62 +76,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           report: {
-            type: "patients",
+            type: "users",
             period: { start, end },
-            data: patients,
+            data: users,
             summary: {
-              total: patients.length,
-              withAppointments: patients.filter((p) => p.appointments.length > 0).length,
-            },
-          },
-        });
-      }
-
-      case "performance": {
-        const appointments = await prisma.appointment.findMany({
-          where: {
-            clinicId,
-            startTime: {
-              gte: start,
-              lte: end,
-            },
-          },
-          include: {
-            doctor: {
-              select: {
-                fullName: true,
-                specialization: true,
-              },
-            },
-          },
-        });
-
-        const doctorPerformance = appointments.reduce((acc, apt) => {
-          if (!apt.doctor) return acc;
-          const doctorId = apt.doctor.id;
-          if (!acc[doctorId]) {
-            acc[doctorId] = {
-              doctor: apt.doctor,
-              total: 0,
-              completed: 0,
-              cancelled: 0,
-            };
-          }
-          acc[doctorId].total++;
-          if (apt.status === "COMPLETED") acc[doctorId].completed++;
-          if (apt.status === "CANCELLED") acc[doctorId].cancelled++;
-          return acc;
-        }, {} as Record<string, any>);
-
-        return NextResponse.json({
-          success: true,
-          report: {
-            type: "performance",
-            period: { start, end },
-            data: Object.values(doctorPerformance),
-            summary: {
-              totalAppointments: appointments.length,
-              completionRate: appointments.filter((a) => a.status === "COMPLETED").length / appointments.length,
+              total: users.length,
+              withAppointments: users.filter((u) => u.appointments.length > 0).length,
             },
           },
         });
@@ -154,7 +89,7 @@ export async function GET(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: "Invalid report type" },
+          { error: "Invalid report type. Use 'appointments' or 'users'" },
           { status: 400 }
         );
     }
@@ -166,4 +101,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

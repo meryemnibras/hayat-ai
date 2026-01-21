@@ -5,32 +5,26 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { doctorId, doctorName, specialty, date, time, patientId, clinicId } = body;
+    const { doctorName, treatment, date, time, userId } = body;
 
     // Validate required fields
-    if (!doctorName || !date || !time) {
+    if (!doctorName || !treatment || !date || !time) {
       return NextResponse.json(
-        { error: "Missing required fields: doctorName, date, time" },
+        { error: "Missing required fields: doctorName, treatment, date, time" },
         { status: 400 }
       );
     }
 
-    // Parse the date and time
-    const startTime = new Date(`${date}T${time}:00`);
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour appointment
-
     // Create the appointment
     const appointment = await prisma.appointment.create({
       data: {
-        clinicId: clinicId || "default-clinic", // Use provided clinicId or default
-        patientId: patientId || "guest-patient", // Use provided patientId or guest
-        title: `${specialty} - ${doctorName}`,
-        startTime,
-        endTime,
-        location: "Hayat AI Clinic",
-        notes: `Booked via Patient Portal\nDoctor: ${doctorName}\nSpecialty: ${specialty}`,
-        status: "SCHEDULED",
-        source: "WEB",
+        userId: userId || "guest-user",
+        doctorName,
+        treatment,
+        date: new Date(date),
+        time,
+        status: "PENDING",
+        notes: `Booked via Patient Portal\nDoctor: ${doctorName}\nTreatment: ${treatment}`,
       },
     });
 
@@ -38,12 +32,11 @@ export async function POST(request: NextRequest) {
       success: true,
       appointment: {
         id: appointment.id,
-        doctor: doctorName,
-        specialty,
-        date,
-        time,
+        doctorName: appointment.doctorName,
+        treatment: appointment.treatment,
+        date: appointment.date,
+        time: appointment.time,
         status: appointment.status,
-        location: appointment.location,
       },
     });
   } catch (error) {
@@ -62,29 +55,27 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const patientId = searchParams.get("patientId");
+    const userId = searchParams.get("userId");
 
-    if (!patientId) {
-      // Return demo data if no patientId
+    if (!userId) {
+      // Return demo data if no userId
       return NextResponse.json({
         appointments: [
           {
             id: "1",
-            doctor: "Dr. Sarah Johnson",
-            specialty: "Dermatology",
+            doctorName: "Dr. Sarah Johnson",
+            treatment: "Dermatology Consultation",
             date: "Dec 18, 2024",
             time: "14:00",
-            status: "confirmed",
-            location: "Hayat Clinic - Downtown",
+            status: "CONFIRMED",
           },
           {
             id: "2",
-            doctor: "Dr. Ahmed Hassan",
-            specialty: "Plastic Surgery",
+            doctorName: "Dr. Ahmed Hassan",
+            treatment: "Plastic Surgery Consultation",
             date: "Dec 22, 2024",
             time: "10:00",
-            status: "pending",
-            location: "Hayat Clinic - West Side",
+            status: "PENDING",
           },
         ],
       });
@@ -92,31 +83,32 @@ export async function GET(request: NextRequest) {
 
     const appointments = await prisma.appointment.findMany({
       where: {
-        patientId,
-        startTime: {
+        userId,
+        date: {
           gte: new Date(),
         },
       },
-      orderBy: {
-        startTime: "asc",
-      },
       include: {
-        provider: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "asc",
       },
     });
 
     return NextResponse.json({
       appointments: appointments.map((apt) => ({
         id: apt.id,
-        doctor: apt.provider?.fullName || "Doctor",
-        specialty: apt.provider?.title || "Specialist",
-        date: apt.startTime.toLocaleDateString(),
-        time: apt.startTime.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: apt.status.toLowerCase(),
-        location: apt.location,
+        doctorName: apt.doctorName,
+        treatment: apt.treatment,
+        date: apt.date.toLocaleDateString(),
+        time: apt.time,
+        status: apt.status,
       })),
     });
   } catch (error) {
@@ -127,17 +119,13 @@ export async function GET(request: NextRequest) {
       appointments: [
         {
           id: "1",
-          doctor: "Dr. Sarah Johnson",
-          specialty: "Dermatology",
+          doctorName: "Dr. Sarah Johnson",
+          treatment: "Dermatology Consultation",
           date: "Dec 18, 2024",
           time: "14:00",
-          status: "confirmed",
-          location: "Hayat Clinic - Downtown",
+          status: "CONFIRMED",
         },
       ],
     });
   }
 }
-
-
-

@@ -287,3 +287,19 @@ npx prisma migrate deploy
    - يتم توليده تلقائياً في `postinstall` و `build`
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

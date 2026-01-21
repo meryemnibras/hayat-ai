@@ -34,3 +34,19 @@ export function getLanguageFromHeader(acceptLanguage?: string | null): Supported
   return defaultLanguage;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

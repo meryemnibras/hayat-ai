@@ -90,3 +90,19 @@ npx prisma db seed
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
