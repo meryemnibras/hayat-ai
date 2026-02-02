@@ -20,11 +20,7 @@
 ### 3. Environment Variables
 - ✅ **DATABASE_URL** - موجود
 - ✅ **NEXT_PUBLIC_SUPABASE_URL** - موجود
-- ✅ **NEXT_PUBLIC_SUPABASE_ANON_KEY** - موجود
-- ⚠️ **OPENAI_API_KEY** - يحتاج إضافة
-- ⚠️ **NEXT_PUBLIC_APP_URL** - يحتاج إضافة
-- ⚠️ **DEFAULT_CLINIC_ID** - يحتاج إضافة
-
+- ✅ **NEXT_PUBLIC_SUPABASE_ANON_KEY** - موجو
 ---
 
 ## 📋 الخطوات المتبقية (بسيطة):
